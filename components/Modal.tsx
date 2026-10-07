@@ -1,0 +1,3 @@
+"use client";
+import {useEffect,useRef,type ReactNode} from 'react';
+export default function Modal({children,onClose,busy=false}:{children:ReactNode;onClose:()=>void;busy?:boolean}){const ref=useRef<HTMLDialogElement>(null);useEffect(()=>{const previous=document.activeElement instanceof HTMLElement ? document.activeElement : null;const el=ref.current;el?.showModal();return ()=>{el?.close();previous?.focus();};},[]);return <dialog ref={ref} aria-label="มอบหมายงานให้ช่าง" onCancel={e=>{e.preventDefault();if(!busy)onClose();}} className="m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-2xl bg-white p-0 backdrop:bg-black/40">{children}</dialog>;}

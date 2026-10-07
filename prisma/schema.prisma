@@ -1,0 +1,181 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String?   @unique
+  name         String
+  role         String    @default("STUDENT") // STUDENT, STAFF, TECHNICIAN, ADMIN, SUPERADMIN
+  studentId    String?
+  phoneNumber  String?
+  faculty      String?
+  department   String?
+  avatarUrl    String?
+  lineUserId   String?   @unique
+  notificationReadAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  reportedTickets   Ticket[]             @relation("ReporterRelation")
+  assignedJobs      TicketAssignment[]   @relation("TechnicianRelation")
+  dispatchedJobs    TicketAssignment[]   @relation("AdminAssignerRelation")
+  statusLogs        TicketStatusLog[]
+  uploadedImages    TicketImage[]
+  evaluations       Evaluation[]
+  credential        AuthCredential?
+  sessions          AuthSession[]
+
+  @@map("users")
+}
+
+model AuthCredential {
+  userId       String   @id
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  passwordHash String
+  disabledAt   DateTime?
+  updatedAt    DateTime @updatedAt
+
+  @@map("auth_credentials")
+}
+
+model AuthSession {
+  tokenHash String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("auth_sessions")
+}
+
+model AuthLoginLimit {
+  key       String   @id
+  attempts  Int
+  resetsAt  DateTime
+
+  @@index([resetsAt])
+  @@map("auth_login_limits")
+}
+
+model Building {
+  id          Int      @id @default(autoincrement())
+  name        String
+  code        String   @unique
+  defaultLat  Float?
+  defaultLng  Float?
+
+  tickets     Ticket[]
+
+  @@map("buildings")
+}
+
+model Category {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  icon        String?
+
+  tickets     Ticket[]
+
+  @@map("categories")
+}
+
+model Ticket {
+  id              String       @id @default(uuid())
+  ticketCode      String       @unique
+  title           String
+  description     String
+  status          String       @default("PENDING") // PENDING, IN_PROGRESS, WAITING_PARTS, COMPLETED, REJECTED
+  priority        String       @default("MEDIUM")  // LOW, MEDIUM, HIGH, URGENT
+
+  buildingId      Int
+  building        Building     @relation(fields: [buildingId], references: [id])
+  floor           String?
+  room            String?
+  locationNote    String?
+  latitude        Float?
+  longitude       Float?
+
+  reporterId      String
+  reporter        User         @relation("ReporterRelation", fields: [reporterId], references: [id])
+
+  categoryId      Int
+  category        Category     @relation(fields: [categoryId], references: [id])
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  resolvedAt      DateTime?
+
+  images          TicketImage[]
+  assignments     TicketAssignment[]
+  statusLogs      TicketStatusLog[]
+  evaluation      Evaluation?
+
+  @@index([status])
+  @@index([buildingId])
+  @@index([categoryId])
+  @@map("tickets")
+}
+
+model TicketImage {
+  id           String     @id @default(uuid())
+  ticketId     String
+  ticket       Ticket     @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  imageUrl     String
+  imageType    String     @default("BEFORE") // BEFORE, AFTER
+  uploadedById String
+  uploadedBy   User       @relation(fields: [uploadedById], references: [id])
+  createdAt    DateTime   @default(now())
+
+  @@map("ticket_images")
+}
+
+model TicketAssignment {
+  id           String    @id @default(uuid())
+  ticketId     String
+  ticket       Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  
+  technicianId String
+  technician   User      @relation("TechnicianRelation", fields: [technicianId], references: [id])
+
+  assignedById String
+  assignedBy   User      @relation("AdminAssignerRelation", fields: [assignedById], references: [id])
+
+  assignedAt   DateTime  @default(now())
+
+  @@map("ticket_assignments")
+}
+
+model TicketStatusLog {
+  id          String    @id @default(uuid())
+  ticketId    String
+  ticket      Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  status      String
+  note        String?
+  changedById String
+  changedBy   User      @relation(fields: [changedById], references: [id])
+  createdAt   DateTime  @default(now())
+
+  @@map("ticket_status_logs")
+}
+
+model Evaluation {
+  id          String    @id @default(uuid())
+  ticketId    String    @unique
+  ticket      Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  reporterId  String
+  reporter    User      @relation(fields: [reporterId], references: [id])
+  score       Int       // 1 - 5
+  comment     String?
+  createdAt   DateTime  @default(now())
+
+  @@map("evaluations")
+}
