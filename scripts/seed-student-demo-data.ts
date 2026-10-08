@@ -84,6 +84,14 @@ const statuses = ["PENDING", "PENDING", "IN_PROGRESS", "IN_PROGRESS", "WAITING_P
 const priorities = ["LOW", "MEDIUM", "MEDIUM", "HIGH", "URGENT"];
 
 async function main() {
+  const completedDemoTickets = await prisma.ticket.count({
+    where: { ticketCode: { startsWith: "BRU-DEMO-" } },
+  });
+  if (completedDemoTickets >= students.length) {
+    console.log(`ชุดข้อมูลสาธิตมีครบ ${completedDemoTickets} รายการแล้ว ข้ามการนำเข้า`);
+    return;
+  }
+
   const [buildings, categories, admin, technicians] = await Promise.all([
     prisma.building.findMany({ orderBy: { id: "asc" } }),
     prisma.category.findMany({ orderBy: { id: "asc" } }),
