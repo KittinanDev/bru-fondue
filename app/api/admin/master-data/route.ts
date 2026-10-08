@@ -20,7 +20,20 @@ export async function POST(request:Request){
  const current=id?await tx.building.findUnique({where:{id}}):null;if(id&&!current)throw new InputError('ไม่พบอาคาร',404);
  if(current && body.expected!==JSON.stringify(current))throw new InputError('ข้อมูลถูกแก้ไขแล้ว กรุณาโหลดหน้าใหม่',409);
  const all=await tx.building.findMany();if(all.some(x=>x.id!==id && (x.code.toUpperCase()===code||x.name.normalize('NFC').toLowerCase()===name.toLowerCase())))throw new InputError('ชื่อหรือรหัสอาคารนี้มีอยู่แล้ว',409);
- return id?tx.building.update({where:{id},data}):tx.building.create({data});
+ if(id){
+  const updated=await tx.building.update({where:{id},data});
+  if(coords.latitude!==null && coords.longitude!==null){
+    await tx.ticket.updateMany({
+      where:{buildingId:id},
+      data:{
+        latitude:coords.latitude,
+        longitude:coords.longitude,
+      },
+    });
+  }
+  return updated;
+ }
+ return tx.building.create({data});
  }
  const description=textField(body.description,'คำอธิบาย',500,true)||null;
  const defaultTechnicianId=body.defaultTechnicianId===null||body.defaultTechnicianId===''?null:textField(body.defaultTechnicianId,'ช่างประจำหมวดหมู่',80);

@@ -13,7 +13,12 @@ export interface TicketItem {
   priority: string;
   latitude: number | null;
   longitude: number | null;
-  building?: { name: string } | null;
+  building?: {
+    id?: number;
+    name: string;
+    defaultLat?: number | null;
+    defaultLng?: number | null;
+  } | null;
   category?: { name: string } | null;
   reporter?: { name: string } | null;
   images?: { imageUrl: string; imageType: string }[];
@@ -38,6 +43,23 @@ interface TicketCluster {
 }
 
 const CLUSTER_THRESHOLD_PCT = 2.0; // Radius threshold in map percentage to merge overlapping pins
+
+export function getTicketCoords(ticket: TicketItem): { lat: number; lng: number } | null {
+  // 1. If building has default coordinates (e.g. updated in Master Data), prioritize them
+  // so any adjustments to buildings in Master Data immediately update the map pins!
+  const bLat = ticket.building?.defaultLat;
+  const bLng = ticket.building?.defaultLng;
+  if (validCoordinates(bLat, bLng)) {
+    return { lat: bLat!, lng: bLng! };
+  }
+
+  // 2. Otherwise fallback to ticket's explicitly saved coordinates
+  if (validCoordinates(ticket.latitude, ticket.longitude)) {
+    return { lat: ticket.latitude!, lng: ticket.longitude! };
+  }
+
+  return null;
+}
 
 const getClusterStatus = (tickets: TicketItem[]) => {
   if (tickets.some((t) => t.status === "PENDING")) return "PENDING";
@@ -122,17 +144,25 @@ const statusSortWeight: Record<string, number> = {
 export default function AdminCampusMap({ tickets }: AdminCampusMapProps) {
   const [selectedCluster, setSelectedCluster] = useState<TicketCluster | null>(null);
 
-  const validTickets = useMemo(
-    () => tickets.filter((t) => validCoordinates(t.latitude, t.longitude)),
-    [tickets]
-  );
+  const validTickets = useMemo(() => {
+    return tickets
+      .map((t) => {
+        const coords = getTicketCoords(t);
+        return coords ? { ticket: t, coords } : null;
+      })
+      .filter(
+        (item): item is { ticket: TicketItem; coords: { lat: number; lng: number } } =>
+          item !== null
+      );
+  }, [tickets]);
 
   // Group tickets into clusters when they share coordinates or are close together
   const clusters = useMemo(() => {
     const list: TicketCluster[] = [];
 
-    for (const ticket of validTickets) {
-      const pos = coordinatesToPercent(ticket.latitude!, ticket.longitude!);
+    for (const item of validTickets) {
+      const { ticket, coords } = item;
+      const pos = coordinatesToPercent(coords.lat, coords.lng);
       const left = pos.left;
       const top = pos.top;
 
@@ -148,8 +178,8 @@ export default function AdminCampusMap({ tickets }: AdminCampusMapProps) {
       } else {
         list.push({
           id: ticket.id,
-          latitude: ticket.latitude!,
-          longitude: ticket.longitude!,
+          latitude: coords.lat,
+          longitude: coords.lng,
           left,
           top,
           buildingName: ticket.building?.name || ticket.locationNote || "จุดในมหาวิทยาลัย",
@@ -455,7 +485,7 @@ export default function AdminCampusMap({ tickets }: AdminCampusMapProps) {
       </div>
 
       <div className="border-t border-slate-100 px-3 py-2 text-[11px] text-slate-500 flex flex-wrap items-center justify-between gap-1">
-        <span>💡 แตะที่หมุดเพื่อดูรายการคำร้องทั้งหมดที่จุดนั้น · เรียงลำดับคำร้องที่ต้องรับเรื่องก่อนเสมอ</span>
+        <span>💡 แตะที่หมุดเพื่อดูรายการคำร้องทั้งหมดที่จุดนั้น · ตำแหน่งหมุดอัปเดตตามข้อมูลอาคารในระบบข้อมูลพื้นฐานเสมอ</span>
         <span>
           {tickets.length - validTickets.length > 0 &&
             `(ไม่แสดงรายการที่ไม่มีพิกัด ${tickets.length - validTickets.length} รายการ)`}
