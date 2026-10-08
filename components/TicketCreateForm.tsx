@@ -183,7 +183,7 @@ export default function TicketCreateForm({
       )}
 
       {/* 1. Category Selection */}
-      <div className={`${step===1?"":"hidden"} bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4`}>
+      <div className={`${step===1?"":"hidden"} bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4`}>
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
@@ -234,7 +234,7 @@ export default function TicketCreateForm({
       </div>
 
       {/* 2. Photo Upload (Before Image) */}
-      <div className={`${step===3?"":"hidden"} bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4`}>
+      <div className={`${step===3?"":"hidden"} bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4`}>
         <div>
           <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
             <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs flex items-center justify-center font-bold">
@@ -250,7 +250,7 @@ export default function TicketCreateForm({
         <p className="text-xs text-slate-500">{IMAGE_HELP}</p>
         <div className="flex flex-wrap gap-3">
           {images.map((img, idx) => (
-            <div key={idx} className="relative w-28 h-28 rounded-xl overflow-hidden border border-slate-200 group">
+            <div key={idx} className="relative h-24 w-24 overflow-hidden rounded-xl border border-slate-200 group sm:h-28 sm:w-28">
               <img src={img} alt="Before preview" className="w-full h-full object-cover" />
               <button
                 type="button"
@@ -267,7 +267,7 @@ export default function TicketCreateForm({
           ))}
 
           {images.length < 4 && (
-            <label className="w-28 h-28 border-2 border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/30 rounded-xl flex flex-col items-center justify-center text-slate-400 hover:text-indigo-600 cursor-pointer transition-all">
+            <label className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 text-slate-400 transition-all hover:border-indigo-400 hover:bg-indigo-50/30 hover:text-indigo-600 sm:h-28 sm:w-28">
               <Camera className="w-6 h-6 mb-1" />
               <span className="text-[11px] font-semibold">{readingImages ? "กำลังอ่านรูป…" : "แนบรูปถ่าย"}</span>
               <span className="text-[9px] text-slate-400">({images.length}/4 รูป)</span>
@@ -286,7 +286,7 @@ export default function TicketCreateForm({
       </div>
 
       {/* 3. Location & Indoor Details */}
-      <div className={`${step===2?"":"hidden"} bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-5`}>
+      <div className={`${step===2?"":"hidden"} bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-5`}>
         <div>
           <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
             <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs flex items-center justify-center font-bold">
@@ -363,7 +363,7 @@ export default function TicketCreateForm({
       </div>
 
       {/* 4. Issue Description & Urgency */}
-      <div className={`${step===1?"":"hidden"} bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-5`}>
+      <div className={`${step===1?"":"hidden"} bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-5`}>
         <div>
           <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
             <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs flex items-center justify-center font-bold">
@@ -437,13 +437,13 @@ export default function TicketCreateForm({
           ผู้แจ้ง: <span className="font-semibold text-slate-700">{currentUserName}</span> • ระบบจะส่งเรื่องให้กองอาคารสถานที่ตรวจสอบทันที
         </div>
 
-        <div className="flex w-full gap-3 sm:w-auto">
-        {step>1&&<button type="button" onClick={()=>setStep(value=>value-1)} className="flex-1 rounded-xl border border-slate-300 px-6 py-3.5 font-semibold text-slate-700 sm:flex-none">ย้อนกลับ</button>}
-        {step<3?<button key="next-step" type="button" onClick={(event)=>{event.preventDefault();goNext();}} className="flex-1 rounded-xl bg-indigo-600 px-8 py-3.5 font-bold text-white sm:flex-none">ถัดไป</button>:<button
+        <div className="grid w-full grid-cols-1 gap-3 sm:flex sm:w-auto">
+        {step>1&&<button type="button" onClick={()=>setStep(value=>value-1)} className="w-full whitespace-nowrap rounded-xl border border-slate-300 px-6 py-3 font-semibold text-slate-700 sm:w-auto">ย้อนกลับ</button>}
+        {step<3?<button key="next-step" type="button" onClick={(event)=>{event.preventDefault();goNext();}} className="w-full whitespace-nowrap rounded-xl bg-indigo-600 px-8 py-3 font-bold text-white sm:w-auto">ถัดไป</button>:<button
           key="submit-ticket"
           type="submit"
           disabled={submitting || readingImages}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold text-sm rounded-xl shadow-md shadow-indigo-200 transition-all disabled:opacity-50"
+          className="flex min-h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-indigo-600 px-8 py-3 font-bold text-white shadow-md shadow-indigo-200 transition-all hover:bg-indigo-700 active:scale-95 disabled:opacity-50 sm:w-auto"
         >
           {submitting ? (
             <>กำลังส่งคำร้องเข้าระบบ...</>
