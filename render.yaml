@@ -10,5 +10,3 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: DATABASE_URL
-        value: file:/tmp/bru-fondue.db
