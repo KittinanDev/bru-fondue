@@ -124,6 +124,7 @@ export default function TicketEvaluationCard({
           <div className="text-[11px] text-slate-400 shrink-0">
             {evaluation?.createdAt
               ? new Date(evaluation.createdAt).toLocaleDateString("th-TH", {
+                  timeZone: "Asia/Bangkok",
                   day: "numeric",
                   month: "short",
                   year: "numeric",

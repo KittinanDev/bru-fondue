@@ -143,6 +143,7 @@ export default async function MyTicketsPage() {
                       <div className="text-[11px] text-slate-400 flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
                         {new Date(t.createdAt).toLocaleDateString("th-TH", {
+                          timeZone: "Asia/Bangkok",
                           day: "numeric",
                           month: "short",
                           year: "numeric",

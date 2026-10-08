@@ -203,7 +203,9 @@ export default async function TicketDetailPage({
           <div className="text-right text-xs text-slate-400 shrink-0">
             <div>แจ้งเมื่อ</div>
             <div className="font-medium text-slate-600">
-              {new Date(ticket.createdAt).toLocaleString("th-TH")}
+              {new Date(ticket.createdAt).toLocaleString("th-TH", {
+                timeZone: "Asia/Bangkok",
+              })}
             </div>
           </div>
         </div>
@@ -344,7 +346,9 @@ export default async function TicketDetailPage({
                   <div className="flex justify-between items-center mb-1">
                     <span className="font-bold text-slate-800">{statusLabels[log.status]||log.status}</span>
                     <span className="text-[11px] text-slate-400">
-                      {new Date(log.createdAt).toLocaleString("th-TH")}
+                      {new Date(log.createdAt).toLocaleString("th-TH", {
+                        timeZone: "Asia/Bangkok",
+                      })}
                     </span>
                   </div>
                   <p className="text-slate-600">{log.note || "-"}</p>

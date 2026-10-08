@@ -168,6 +168,7 @@ export default async function TechnicianJobsPage() {
                     <div>มอบหมายเมื่อ</div>
                     <div className="font-medium text-slate-600">
                       {new Date(a.assignedAt).toLocaleDateString("th-TH", {
+                        timeZone: "Asia/Bangkok",
                         day: "numeric",
                         month: "short",
                         year: "numeric",
