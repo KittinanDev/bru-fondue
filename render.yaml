@@ -6,7 +6,7 @@ services:
     autoDeploy: true
     healthCheckPath: /api/health
     buildCommand: npm ci && npx prisma generate && npx next build
-    startCommand: npm run db:deploy && npm run start
+    startCommand: npm run start
     envVars:
       - key: NODE_ENV
         value: production
