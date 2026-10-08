@@ -62,10 +62,21 @@ export default function AdminCampusMap({ tickets }: AdminCampusMapProps) {
         keyboard: true,
       }).setView([14.9928, 103.1025], 16);
 
-      L.tileLayer("/api/map-tiles/{z}/{x}/{y}", {
+      const tiles = L.tileLayer("/api/tiles/{z}/{x}/{y}", {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
         maxZoom: 19,
       }).addTo(map);
+      tiles.on("tileerror", (event) => {
+        const tile = event.tile as HTMLImageElement;
+        const fallback = tile.dataset.fallbackTile;
+        if (!fallback) {
+          tile.dataset.fallbackTile = "carto";
+          tile.src = `https://a.basemaps.cartocdn.com/light_all/${event.coords.z}/${event.coords.x}/${event.coords.y}.png`;
+        } else if (fallback === "carto") {
+          tile.dataset.fallbackTile = "osm";
+          tile.src = `https://tile.openstreetmap.org/${event.coords.z}/${event.coords.x}/${event.coords.y}.png`;
+        }
+      });
 
       mapInstanceRef.current = map;
 
