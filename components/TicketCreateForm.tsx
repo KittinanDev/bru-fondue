@@ -349,7 +349,7 @@ export default function TicketCreateForm({
             ปักหมุดบนแผนที่ มหาวิทยาลัยราชภัฏบุรีรัมย์ (Leaflet GPS)
           </label>
           {!hasCoordinates && <p className="mb-2 text-sm text-amber-700">อาคารนี้ยังไม่มีพิกัด กรุณาปักหมุด หากไม่เลือกจะบันทึกโดยไม่มีพิกัด</p>}
-          <LocationPickerMap
+          {step===2&&<LocationPickerMap
             key={selectedBuilding}
             initialLat={lat}
             initialLng={lng}
@@ -358,7 +358,7 @@ export default function TicketCreateForm({
               setLat(newLat);
               setLng(newLng);
             }}
-          />
+          />}
         </div>
       </div>
 
@@ -439,7 +439,8 @@ export default function TicketCreateForm({
 
         <div className="flex w-full gap-3 sm:w-auto">
         {step>1&&<button type="button" onClick={()=>setStep(value=>value-1)} className="flex-1 rounded-xl border border-slate-300 px-6 py-3.5 font-semibold text-slate-700 sm:flex-none">ย้อนกลับ</button>}
-        {step<3?<button type="button" onClick={goNext} className="flex-1 rounded-xl bg-indigo-600 px-8 py-3.5 font-bold text-white sm:flex-none">ถัดไป</button>:<button
+        {step<3?<button key="next-step" type="button" onClick={(event)=>{event.preventDefault();goNext();}} className="flex-1 rounded-xl bg-indigo-600 px-8 py-3.5 font-bold text-white sm:flex-none">ถัดไป</button>:<button
+          key="submit-ticket"
           type="submit"
           disabled={submitting || readingImages}
           className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold text-sm rounded-xl shadow-md shadow-indigo-200 transition-all disabled:opacity-50"
