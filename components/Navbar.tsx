@@ -31,6 +31,7 @@ export default async function Navbar() {
           {reporter && <Link href="/my-tickets">คำร้องของฉัน</Link>}
           {isAdmin(user) && <Link href="/admin/dashboard">สถิติและรายงาน</Link>}
           {isAdmin(user) && <Link href="/admin/settings">ข้อมูลพื้นฐาน</Link>}
+          {isAdmin(user) && <Link href="/admin/users">ผู้ใช้งาน</Link>}
           <Link href="/#how-it-works">วิธีใช้งาน</Link>
         </div>
         <div className="nav-actions">
@@ -40,7 +41,7 @@ export default async function Navbar() {
             <details className="account-menu">
               <summary aria-label="บัญชีผู้ใช้" className="account-trigger"><UserRound size={17} /><span>บัญชี</span><ChevronDown size={13} /></summary>
               <div className="account-panel">
-                <div><p className="text-sm font-medium text-slate-900">{user.name}</p><p className="mt-1 text-xs text-slate-500">{roleLabel}</p></div>
+                <div><p className="text-sm font-medium text-slate-900">{user.name}</p><p className="mt-1 text-xs text-slate-500">{roleLabel}</p>{isAdmin(user)&&<Link href="/admin/users" className="mt-3 block text-sm font-semibold text-indigo-600">จัดการผู้ใช้งาน</Link>}</div>
                 <LogoutButton />
               </div>
             </details>
