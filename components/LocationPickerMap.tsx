@@ -28,8 +28,8 @@ export default function LocationPickerMap({ initialLat = 14.9928, initialLng = 1
     aliveRef.current = true;
     const map = L.map(container, { scrollWheelZoom: true, touchZoom: true, dragging: true, keyboard: true, zoomControl: true }).setView(initialRef.current, 17);
     mapRef.current = map;
-    const tiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom: 19, crossOrigin: true,
+    const tiles = L.tileLayer("/api/map-tiles/{z}/{x}/{y}", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>', maxZoom: 19,
     }).addTo(map);
     tiles.on("tileerror", () => aliveRef.current && setTileError(true));
     tiles.on("load", () => aliveRef.current && setTileError(false));
