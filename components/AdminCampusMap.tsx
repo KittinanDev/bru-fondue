@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { validCoordinates } from "@/lib/coordinates";
+import { validCoordinates, coordinatesToPercent } from "@/lib/coordinates";
 import { MapPin, X, ChevronRight, Layers, AlertCircle, Clock, Wrench } from "lucide-react";
 
 export interface TicketItem {
@@ -37,16 +37,7 @@ interface TicketCluster {
   tickets: TicketItem[];
 }
 
-const bounds = {
-  south: 14.984586356558806,
-  west: 103.09295654296875,
-  north: 14.995198836057886,
-  east: 103.10394287109375,
-};
-
-const clamp = (value: number) => Math.max(0, Math.min(1, value));
-
-const CLUSTER_THRESHOLD_PCT = 2.4; // Radius threshold in map percentage to merge overlapping pins
+const CLUSTER_THRESHOLD_PCT = 2.0; // Radius threshold in map percentage to merge overlapping pins
 
 const getClusterStatus = (tickets: TicketItem[]) => {
   if (tickets.some((t) => t.status === "PENDING")) return "PENDING";
@@ -141,8 +132,9 @@ export default function AdminCampusMap({ tickets }: AdminCampusMapProps) {
     const list: TicketCluster[] = [];
 
     for (const ticket of validTickets) {
-      const left = clamp((ticket.longitude! - bounds.west) / (bounds.east - bounds.west)) * 100;
-      const top = clamp((bounds.north - ticket.latitude!) / (bounds.north - bounds.south)) * 100;
+      const pos = coordinatesToPercent(ticket.latitude!, ticket.longitude!);
+      const left = pos.left;
+      const top = pos.top;
 
       // Find an existing cluster within threshold
       let found = list.find((c) => {
@@ -206,7 +198,7 @@ export default function AdminCampusMap({ tickets }: AdminCampusMapProps) {
     <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
       {/* Map Canvas Area */}
       <div
-        className="relative mx-auto aspect-square w-full max-w-[42rem] bg-slate-100 select-none"
+        className="relative mx-auto aspect-square w-full max-w-[40rem] bg-slate-100 select-none"
         onClick={() => setSelectedCluster(null)}
       >
         <img
@@ -262,7 +254,7 @@ export default function AdminCampusMap({ tickets }: AdminCampusMapProps) {
               }}
               title={`พบ ${count} คำร้อง ณ ${cluster.buildingName} (คลิกเพื่อดูรายการทั้งหมด)`}
               aria-label={`พบ ${count} คำร้อง ณ ${cluster.buildingName}`}
-              className={`group absolute -translate-x-1/2 -translate-y-full transition-all hover:scale-125 focus:outline-none ${
+              className={`group absolute -translate-x-1/2 -translate-y-full w-8 h-8 transition-all hover:scale-125 focus:outline-none ${
                 isSelected ? "scale-125 z-20" : "z-10"
               }`}
               style={{ left: `${cluster.left}%`, top: `${cluster.top}%` }}
@@ -295,7 +287,7 @@ export default function AdminCampusMap({ tickets }: AdminCampusMapProps) {
         {/* Selected Cluster Drawer / Popup */}
         {activeCluster && (
           <div
-            className="absolute inset-x-2 bottom-2 sm:inset-auto sm:right-3 sm:top-3 sm:bottom-3 sm:w-[410px] max-h-[85%] sm:max-h-none z-30 flex flex-col rounded-2xl border border-slate-200/90 bg-white/95 backdrop-blur-md shadow-2xl animate-in fade-in zoom-in-95 duration-150 overflow-hidden"
+            className="absolute inset-x-2 bottom-2 sm:inset-auto sm:right-3 sm:top-3 sm:bottom-3 sm:w-[390px] max-h-[85%] sm:max-h-none z-30 flex flex-col rounded-2xl border border-slate-200/90 bg-white/95 backdrop-blur-md shadow-2xl animate-in fade-in zoom-in-95 duration-150 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}

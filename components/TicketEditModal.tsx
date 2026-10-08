@@ -52,6 +52,8 @@ export default function TicketEditModal({
   const [buildingId, setBuildingId] = useState(ticket.buildingId);
   const [location, setLocation] = useState(ticket.locationNote || ticket.room || "");
   const [priority, setPriority] = useState(ticket.priority);
+  const [latitude, setLatitude] = useState<number | null | undefined>(ticket.latitude);
+  const [longitude, setLongitude] = useState<number | null | undefined>(ticket.longitude);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -70,6 +72,8 @@ export default function TicketEditModal({
     setBuildingId(ticket.buildingId);
     setLocation(ticket.locationNote || ticket.room || "");
     setPriority(ticket.priority);
+    setLatitude(ticket.latitude);
+    setLongitude(ticket.longitude);
     setError(null);
     setSuccess(false);
     setIsOpen(true);
@@ -112,8 +116,8 @@ export default function TicketEditModal({
           buildingId: Number(buildingId),
           priority,
           expectedUpdatedAt: ticket.updatedAt,
-          latitude: ticket.latitude ?? undefined,
-          longitude: ticket.longitude ?? undefined,
+          latitude: latitude ?? undefined,
+          longitude: longitude ?? undefined,
         }),
       });
 
@@ -251,6 +255,10 @@ export default function TicketEditModal({
                         onClick={() => {
                           setLocation(b.name);
                           setBuildingId(b.id);
+                          if (b.defaultLat != null && b.defaultLng != null) {
+                            setLatitude(b.defaultLat);
+                            setLongitude(b.defaultLng);
+                          }
                         }}
                         className="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-[10px] text-slate-600 transition-colors border border-slate-200"
                       >
