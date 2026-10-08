@@ -1,5 +1,4 @@
 import { PrismaClient } from "@prisma/client";
-import { hashPassword } from "../lib/password";
 
 const prisma = new PrismaClient();
 
@@ -82,6 +81,7 @@ const issueSubjects = [
 const rooms = ["1501", "1502", "1503", "2201", "2203", "2205", "2401", "2403", "ห้องประชุม 1", "โถงชั้นล่าง"];
 const statuses = ["PENDING", "PENDING", "IN_PROGRESS", "IN_PROGRESS", "WAITING_PARTS", "COMPLETED"];
 const priorities = ["LOW", "MEDIUM", "MEDIUM", "HIGH", "URGENT"];
+const defaultPasswordHash = "scrypt-v1:906236c326b9cbce9270e1f79d77e9ac:09c9c1f7fbfa770f0ddbf6742296d824c58eef5723497af07ead678b6efb7b8a309ae43276f8df121df9ddb4a6716a83854f407f3bfd513ada8e83d8585262e5";
 
 async function main() {
   const completedDemoTickets = await prisma.ticket.count({
@@ -100,7 +100,6 @@ async function main() {
   ]);
   if (!buildings.length || !categories.length) throw new Error("ต้องมีข้อมูลอาคารและหมวดหมู่ก่อนนำเข้าข้อมูลจำลอง");
 
-  const passwordHash = await hashPassword("changeme123");
   let createdUsers = 0;
   let createdTickets = 0;
 
@@ -116,8 +115,8 @@ async function main() {
     if (!existing) createdUsers++;
     await prisma.authCredential.upsert({
       where: { userId: user.id },
-      update: { passwordHash, disabledAt: null },
-      create: { userId: user.id, passwordHash },
+      update: { passwordHash: defaultPasswordHash, disabledAt: null },
+      create: { userId: user.id, passwordHash: defaultPasswordHash },
     });
 
     const ticketCode = `BRU-DEMO-${studentId.slice(-3)}`;
