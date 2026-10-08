@@ -7,6 +7,7 @@ import { canReportTicket, isAdmin } from "@/lib/permissions";
 import LogoutButton from "./LogoutButton";
 import NotificationMenu from "./NotificationMenu";
 import MobileBottomNav from "./MobileBottomNav";
+import { NotificationProvider } from "./NotificationProvider";
 
 export default async function Navbar() {
   const user = await getCurrentUser();
@@ -18,7 +19,7 @@ export default async function Navbar() {
   const actionLabel = !user ? "เข้าสู่ระบบ" : reporter ? "แจ้งปัญหา" : isAdmin(user) ? "จัดการคำร้อง" : "งานของฉัน";
 
   return (
-    <>
+    <NotificationProvider initialUnread={unread} initialNotices={notices.map(notice=>({...notice,createdAt:notice.createdAt.toISOString()}))}>
     <header className="site-header">
       <nav className="section-container nav-inner" aria-label="เมนูหลัก">
         <Link href="/" className="brand" aria-label="BRU Fondue หน้าหลัก">
@@ -33,7 +34,7 @@ export default async function Navbar() {
           <Link href="/#how-it-works">วิธีใช้งาน</Link>
         </div>
         <div className="nav-actions">
-          {user && <NotificationMenu unread={unread} notices={notices}/>} 
+          {user && <NotificationMenu/>}
           <Link href={actionHref} className="button nav-cta">{actionLabel}<ArrowUpRight size={16} /></Link>
           {user && (
             <details className="account-menu">
@@ -47,7 +48,7 @@ export default async function Navbar() {
         </div>
       </nav>
     </header>
-    {user&&<MobileBottomNav role={user.role} unread={unread}/>} 
-    </>
+    {user&&<MobileBottomNav role={user.role}/>}
+    </NotificationProvider>
   );
 }

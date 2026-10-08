@@ -2,10 +2,12 @@
 import Link from "next/link";
 import { BarChart3, Bell, ClipboardList, Home, PlusCircle, Wrench } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { useNotifications } from "./NotificationProvider";
 
 type Item={href:string;label:string;icon:typeof Home};
-export default function MobileBottomNav({role,unread}:{role:string;unread:number}){
+export default function MobileBottomNav({role}:{role:string}){
  const pathname=usePathname();
+ const {unread}=useNotifications();
  const items:Item[]=role==="STUDENT"||role==="STAFF"?[
   {href:"/",label:"หน้าหลัก",icon:Home},{href:"/report",label:"แจ้งปัญหา",icon:PlusCircle},{href:"/my-tickets",label:"คำร้อง",icon:ClipboardList},{href:"/notifications",label:"แจ้งเตือน",icon:Bell}
  ]:role==="TECHNICIAN"?[

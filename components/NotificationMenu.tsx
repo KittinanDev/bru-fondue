@@ -4,14 +4,14 @@ import Link from "next/link";
 import { Bell, ChevronRight } from "lucide-react";
 import { statusLabels } from "@/lib/reporting";
 import { useEffect, useRef, useState } from "react";
+import { useNotifications } from "./NotificationProvider";
 
-type Notice={id:string;ticketId:string;status:string;note:string|null;createdAt:Date;unread:boolean;ticket:{ticketCode:string;title:string}};
-
-export default function NotificationMenu({unread,notices}:{unread:number;notices:Notice[]}){
+export default function NotificationMenu(){
+ const {unread,notices,refresh}=useNotifications();
  const [mounted,setMounted]=useState(false);
  const [open,setOpen]=useState(false);
  const closeTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
- const show=()=>{if(closeTimer.current)clearTimeout(closeTimer.current);setMounted(true);requestAnimationFrame(()=>requestAnimationFrame(()=>setOpen(true)))};
+ const show=()=>{if(closeTimer.current)clearTimeout(closeTimer.current);setMounted(true);void refresh();requestAnimationFrame(()=>requestAnimationFrame(()=>setOpen(true)))};
  const hide=()=>{setOpen(false);if(closeTimer.current)clearTimeout(closeTimer.current);closeTimer.current=setTimeout(()=>setMounted(false),240)};
  const toggle=()=>open?hide():show();
  useEffect(()=>{if(!open)return;const close=(event:KeyboardEvent)=>{if(event.key==="Escape")hide()};document.addEventListener("keydown",close);return()=>document.removeEventListener("keydown",close)},[open]);
@@ -27,7 +27,7 @@ export default function NotificationMenu({unread,notices}:{unread:number;notices
    {!notices.length?<p className="notification-empty">ยังไม่มีการแจ้งเตือน</p>:<ul>{notices.map(n=><li key={n.id} className={n.unread?"is-unread":""}>
     <Link href={`/tickets/${n.ticketId}`}>
      <span className="notice-icon"><i className={statusTone(n.status)}/></span>
-     <span className="notice-copy"><strong>{n.ticket.ticketCode} · {n.ticket.title}</strong><span>{statusLabels[n.status]||n.status}{n.note?` · ${n.note}`:""}</span><time>{n.createdAt.toLocaleString("th-TH",{timeZone:"Asia/Bangkok",dateStyle:"short",timeStyle:"short"})}</time></span>
+     <span className="notice-copy"><strong>{n.ticket.ticketCode} · {n.ticket.title}</strong><span>{statusLabels[n.status]||n.status}{n.note?` · ${n.note}`:""}</span><time>{new Date(n.createdAt).toLocaleString("th-TH",{timeZone:"Asia/Bangkok",dateStyle:"short",timeStyle:"short"})}</time></span>
      <ChevronRight aria-hidden="true" size={17}/>
     </Link>
    </li>)}</ul>}
