@@ -5,6 +5,7 @@ import { requireCurrentUser } from "@/lib/auth";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import TechnicianActionConsole from "@/components/TechnicianActionConsole";
+import AdminTicketAssignment from "@/components/AdminTicketAssignment";
 import TicketEvaluationCard from "@/components/TicketEvaluationCard";
 import AccessDenied from "@/components/AccessDenied";
 import { statusLabels } from "@/lib/reporting";
@@ -102,6 +103,12 @@ export default async function TicketDetailPage({
   };
 
   const statusBadge = getStatusBadge(ticket.status);
+  const admin = isAdmin(currentUser);
+  const technicians = admin ? await prisma.user.findMany({
+    where: { role: "TECHNICIAN" },
+    select: { id: true, name: true, department: true },
+    orderBy: { name: "asc" },
+  }) : [];
 
   // Smart back link based on user role
   const backHref =
@@ -151,8 +158,17 @@ export default async function TicketDetailPage({
         <p className="mt-3 text-slate-600">{ticket.status==="PENDING"?"เจ้าหน้าที่กำลังตรวจสอบและมอบหมายช่าง":ticket.status==="IN_PROGRESS"?"ช่างรับงานแล้วและกำลังดำเนินการ":ticket.status==="WAITING_PARTS"?"งานหยุดรออะไหล่หรือวัสดุที่จำเป็น":ticket.status==="COMPLETED"?"งานซ่อมเสร็จแล้ว กรุณาตรวจสอบผลและประเมินบริการ":"คำร้องนี้ปิดการดำเนินการแล้ว"}</p>
       </section>
 
-      {/* Technician Action Console if logged in as Technician or Admin */}
-      {canManageJob && ["IN_PROGRESS", "WAITING_PARTS"].includes(ticket.status) && (
+      {admin && !["COMPLETED", "REJECTED", "CANCELLED"].includes(ticket.status) && <AdminTicketAssignment
+        ticketId={ticket.id}
+        status={ticket.status}
+        priority={ticket.priority}
+        updatedAt={ticket.updatedAt.toISOString()}
+        technicians={technicians}
+        currentTechnicianId={ticket.assignments[0]?.technicianId}
+      />}
+
+      {/* Only the assigned technician updates repair progress. */}
+      {currentUser.role === "TECHNICIAN" && canManageJob && ["IN_PROGRESS", "WAITING_PARTS"].includes(ticket.status) && (
         <TechnicianActionConsole
           ticketId={ticket.id}
           currentStatus={ticket.status}
@@ -162,7 +178,7 @@ export default async function TicketDetailPage({
         />
       )}
 
-      <TicketLifecycleActions key={`lifecycle-${ticket.updatedAt.toISOString()}`} ticketId={ticket.id} status={ticket.status} updatedAt={ticket.updatedAt.toISOString()} admin={isAdmin(currentUser)} owner={canEvaluateTicket(currentUser, access)} />
+      <TicketLifecycleActions key={`lifecycle-${ticket.updatedAt.toISOString()}`} ticketId={ticket.id} status={ticket.status} updatedAt={ticket.updatedAt.toISOString()} admin={admin} owner={canEvaluateTicket(currentUser, access)} />
       {/* Main Ticket Card */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-6">
         {/* Header */}
