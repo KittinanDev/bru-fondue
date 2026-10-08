@@ -44,7 +44,10 @@ next-env.d.ts
 
 # Local credentials, database backups and test handoff files
 /.local/
+/tmp/
+~$*
 *.db
 *.db-journal
 *.db-wal
 *.db-shm
+
