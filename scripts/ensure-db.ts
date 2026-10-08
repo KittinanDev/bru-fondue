@@ -39,7 +39,7 @@ async function main() {
     {
       id: "user-admin-1",
       name: "admin ผู้ดูแลระบบ",
-      email: "wilairat.y@bru.ac.th",
+      email: "admin@bru.ac.th",
       role: "ADMIN",
       studentId: "ADMIN-001",
       phoneNumber: "044-611221",

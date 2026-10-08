@@ -43,6 +43,24 @@ export async function takeLoginAttempt(email: string): Promise<boolean> {
     return true;
   });
 }
+export async function takeRegistrationAttempt(request: Request, email: string): Promise<boolean> {
+  const now = new Date();
+  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const key = sessionHash(`register:${forwarded}:${email}`);
+  return prisma.$transaction(async (tx) => {
+    const limit = await tx.authLoginLimit.findUnique({ where: { key } });
+    if (limit && limit.resetsAt > now && limit.attempts >= 3) return false;
+    if (!limit || limit.resetsAt <= now) {
+      await tx.authLoginLimit.upsert({ where: { key },
+        create: { key, attempts: 1, resetsAt: new Date(now.getTime() + 60 * 60 * 1000) },
+        update: { attempts: 1, resetsAt: new Date(now.getTime() + 60 * 60 * 1000) },
+      });
+    } else {
+      await tx.authLoginLimit.update({ where: { key }, data: { attempts: { increment: 1 } } });
+    }
+    return true;
+  });
+}
 export async function readLoginBody(request: Request): Promise<unknown> {
   if (!request.headers.get("content-type")?.includes("application/json")) throw new Error("Invalid body");
   const reader = request.body?.getReader();
