@@ -62,6 +62,15 @@ export default function AdminCampusMap({ tickets }: AdminCampusMapProps) {
         keyboard: true,
       }).setView([14.9928, 103.1025], 16);
 
+      const fallbackPane = map.createPane("campusFallback");
+      fallbackPane.style.zIndex = "150";
+      fallbackPane.style.pointerEvents = "none";
+      L.imageOverlay(
+        "/campus-map.png",
+        [[14.987239525774244, 103.0902099609375], [15.00846369500486, 103.1121826171875]],
+        { pane: "campusFallback", alt: "แผนที่มหาวิทยาลัยราชภัฏบุรีรัมย์" },
+      ).addTo(map);
+
       const tiles = L.tileLayer("/api/tiles/{z}/{x}/{y}", {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
         maxZoom: 19,
