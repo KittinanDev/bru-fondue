@@ -56,7 +56,11 @@ export default function AdminCampusMap({ tickets }: AdminCampusMapProps) {
     if (!mapContainerRef.current) return;
 
     if (!mapInstanceRef.current) {
-      const map = L.map(mapContainerRef.current).setView([14.9928, 103.1025], 16);
+      const map = L.map(mapContainerRef.current, {
+        scrollWheelZoom: true,
+        dragging: true,
+        keyboard: true,
+      }).setView([14.9928, 103.1025], 16);
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -64,6 +68,13 @@ export default function AdminCampusMap({ tickets }: AdminCampusMapProps) {
       }).addTo(map);
 
       mapInstanceRef.current = map;
+
+      // Leaflet can measure the container before the responsive layout settles.
+      // Recalculate after paint and whenever the desktop content width changes.
+      requestAnimationFrame(() => map.invalidateSize());
+      const resizeObserver = new ResizeObserver(() => map.invalidateSize({ pan: false }));
+      resizeObserver.observe(mapContainerRef.current);
+      map.on("unload", () => resizeObserver.disconnect());
     }
 
     const map = mapInstanceRef.current;
@@ -77,10 +88,12 @@ export default function AdminCampusMap({ tickets }: AdminCampusMapProps) {
     });
 
     // Add markers for tickets with coordinates
+    const markerCoordinates: L.LatLngExpression[] = [];
     tickets.forEach((t) => {
       if (!validCoordinates(t.latitude, t.longitude)) return;
       const lat = t.latitude!;
       const lng = t.longitude!;
+      markerCoordinates.push([lat, lng]);
 
       const marker = L.marker([lat, lng], {
         icon: getMarkerIcon(t.status),
@@ -90,6 +103,12 @@ export default function AdminCampusMap({ tickets }: AdminCampusMapProps) {
 
       marker.bindPopup(buildTicketPopup(t));
     });
+
+    if (markerCoordinates.length > 1) {
+      map.fitBounds(L.latLngBounds(markerCoordinates), { padding: [36, 36], maxZoom: 17 });
+    } else if (markerCoordinates.length === 1) {
+      map.setView(markerCoordinates[0], 17);
+    }
 
     return () => {
       map.remove();
@@ -103,7 +122,9 @@ export default function AdminCampusMap({ tickets }: AdminCampusMapProps) {
         ref={mapContainerRef}
         className="w-full h-80 sm:h-96 bg-slate-100"
         style={{ minHeight: "320px" }}
+        aria-label="แผนที่คำร้องแจ้งซ่อม ลากเพื่อเลื่อน ใช้ปุ่มบวกและลบเพื่อซูม"
       />
+      {tickets.length === 0 && <div className="pointer-events-none absolute inset-x-4 top-1/2 z-10 -translate-y-1/2 text-center"><span className="inline-block rounded-xl border border-slate-200 bg-white/95 px-4 py-3 text-sm font-medium text-slate-600 shadow-sm">ยังไม่มีคำร้องบนแผนที่ เมื่อมีผู้แจ้งปัญหา หมุดจะแสดงที่นี่</span></div>}
       <p className="bg-white p-3 text-xs text-slate-600">ไม่แสดงหมุดสำหรับคำร้องที่ไม่มีพิกัดหรือพิกัดไม่ถูกต้อง {tickets.filter(t => !validCoordinates(t.latitude, t.longitude)).length} รายการ</p>
       {/* Map Legend */}
       <div className="absolute top-3 right-3 z-10 bg-white/95 backdrop-blur-xs p-2.5 rounded-xl border border-slate-200 shadow-sm text-xs space-y-1.5 pointer-events-auto">
