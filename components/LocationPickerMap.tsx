@@ -1,21 +1,103 @@
 "use client";
-import {useEffect,useRef,useState} from 'react';
-import L from 'leaflet';
-interface Props {initialLat?:number;initialLng?:number;onLocationSelect:(lat:number,lng:number)=>void}
-const icon=L.divIcon({html:'<span style="display:block;width:20px;height:20px;background:#2563eb;border:3px solid white;border-radius:50%;box-shadow:0 1px 4px #475569"></span>',className:'location-marker',iconSize:[20,20],iconAnchor:[10,10]});
-export default function LocationPickerMap({initialLat=14.9928,initialLng=103.1025,onLocationSelect}:Props){
- const container=useRef<HTMLDivElement>(null);const map=useRef<L.Map|null>(null);const marker=useRef<L.Marker|null>(null);
- const initial=useRef([initialLat,initialLng] as [number,number]);const callback=useRef(onLocationSelect);
- const [busy,setBusy]=useState(false);const [error,setError]=useState('');const alive=useRef(true);
- useEffect(()=>{callback.current=onLocationSelect;},[onLocationSelect]);
- useEffect(()=>{if(!container.current)return;alive.current=true;const m=L.map(container.current,{scrollWheelZoom:true,dragging:true,keyboard:true}).setView(initial.current,17);map.current=m;
- L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap',maxZoom:19}).addTo(m);
- const pin=L.marker(initial.current,{icon,draggable:true,title:'ตำแหน่งแจ้งซ่อม'}).addTo(m);marker.current=pin;
- pin.on('dragend',()=>{const p=pin.getLatLng();callback.current(p.lat,p.lng);});
- m.on('click',(e:L.LeafletMouseEvent)=>{pin.setLatLng(e.latlng);callback.current(e.latlng.lat,e.latlng.lng);});
- requestAnimationFrame(()=>m.invalidateSize());const observer=new ResizeObserver(()=>m.invalidateSize({pan:false}));observer.observe(container.current);
- return ()=>{alive.current=false;observer.disconnect();m.remove();map.current=null;marker.current=null;};},[]);
- useEffect(()=>{marker.current?.setLatLng([initialLat,initialLng]);map.current?.panTo([initialLat,initialLng]);},[initialLat,initialLng]);
- function gps(){if(!navigator.geolocation){setError('เบราว์เซอร์ไม่รองรับ GPS');return;}setBusy(true);setError('');navigator.geolocation.getCurrentPosition(p=>{if(!alive.current)return;callback.current(p.coords.latitude,p.coords.longitude);setBusy(false);},()=>{if(!alive.current)return;setError('ระบุตำแหน่งไม่ได้ กรุณาปักหมุดบนแผนที่');setBusy(false);},{timeout:10000});}
- return <div className="space-y-3"><div className="flex flex-wrap items-center justify-between gap-3 text-xs"><span>ตำแหน่งบนแผนที่: <output>{initialLat.toFixed(6)}, {initialLng.toFixed(6)}</output></span><button type="button" disabled={busy} onClick={gps} className="rounded-lg border px-3 py-2">{busy?'กำลังหาตำแหน่ง…':'ใช้ตำแหน่งปัจจุบัน'}</button></div>{error&&<p role="alert" className="text-sm text-red-700">{error}</p>}<div ref={container} className="h-80 rounded-xl border" aria-label="แผนที่เลือกตำแหน่ง คลิกหรือลากหมุดเพื่อระบุจุดแจ้งซ่อม"/><p className="text-xs text-slate-500">คลิกแผนที่หรือลากหมุดเพื่อระบุตำแหน่ง ภายในอาคารให้กรอกห้องและชั้นเพิ่มเติม</p></div>;
+
+import { useEffect, useRef, useState } from "react";
+import L from "leaflet";
+
+interface Props { initialLat?: number; initialLng?: number; onLocationSelect: (lat: number, lng: number) => void }
+
+const markerIcon = L.divIcon({
+  html: '<span class="location-marker-dot"></span>', className: "location-marker", iconSize: [40, 40], iconAnchor: [20, 20],
+});
+
+export default function LocationPickerMap({ initialLat = 14.9928, initialLng = 103.1025, onLocationSelect }: Props) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const markerRef = useRef<L.Marker | null>(null);
+  const callbackRef = useRef(onLocationSelect);
+  const initialRef = useRef<[number, number]>([initialLat, initialLng]);
+  const aliveRef = useRef(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [tileError, setTileError] = useState(false);
+
+  useEffect(() => { callbackRef.current = onLocationSelect; }, [onLocationSelect]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || mapRef.current) return;
+    aliveRef.current = true;
+    const map = L.map(container, { scrollWheelZoom: true, touchZoom: true, dragging: true, keyboard: true, zoomControl: true }).setView(initialRef.current, 17);
+    mapRef.current = map;
+    const tiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom: 19, crossOrigin: true,
+    }).addTo(map);
+    tiles.on("tileerror", () => aliveRef.current && setTileError(true));
+    tiles.on("load", () => aliveRef.current && setTileError(false));
+
+    const marker = L.marker(initialRef.current, { icon: markerIcon, draggable: true, title: "ตำแหน่งแจ้งซ่อม", alt: "หมุดตำแหน่งแจ้งซ่อม" }).addTo(map);
+    markerRef.current = marker;
+    const select = (position: L.LatLng) => {
+      marker.setLatLng(position); callbackRef.current(position.lat, position.lng); setError("");
+    };
+    marker.on("dragend", () => select(marker.getLatLng()));
+    map.on("click", (event: L.LeafletMouseEvent) => select(event.latlng));
+
+    const refresh = () => map.invalidateSize({ pan: false });
+    const timers = [50, 250, 600].map((delay) => window.setTimeout(refresh, delay));
+    let observer: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined") { observer = new ResizeObserver(refresh); observer.observe(container); }
+    else window.addEventListener("resize", refresh);
+
+    return () => {
+      aliveRef.current = false; timers.forEach(window.clearTimeout); observer?.disconnect(); window.removeEventListener("resize", refresh);
+      map.remove(); mapRef.current = null; markerRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const position = L.latLng(initialLat, initialLng); markerRef.current?.setLatLng(position); mapRef.current?.panTo(position);
+  }, [initialLat, initialLng]);
+
+  function useMapCenter() {
+    const center = mapRef.current?.getCenter(); if (!center) return;
+    markerRef.current?.setLatLng(center); callbackRef.current(center.lat, center.lng); setError("");
+  }
+
+  function useCurrentLocation() {
+    if (!window.isSecureContext) { setError("GPS ใช้ได้เมื่อเปิดผ่าน HTTPS เท่านั้น กรุณาปักหมุดบนแผนที่แทน"); return; }
+    if (!navigator.geolocation) { setError("เบราว์เซอร์นี้ไม่รองรับ GPS กรุณาปักหมุดบนแผนที่แทน"); return; }
+    setBusy(true); setError("");
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        if (!aliveRef.current) return;
+        const position = L.latLng(coords.latitude, coords.longitude); markerRef.current?.setLatLng(position); mapRef.current?.setView(position, 18);
+        callbackRef.current(position.lat, position.lng); setBusy(false);
+      },
+      (reason) => {
+        if (!aliveRef.current) return;
+        const message = reason.code === reason.PERMISSION_DENIED
+          ? "ไม่ได้รับสิทธิ์ตำแหน่ง กรุณาอนุญาต Location ในเบราว์เซอร์ หรือปักหมุดเอง"
+          : reason.code === reason.TIMEOUT ? "ค้นหาตำแหน่งนานเกินไป กรุณาลองใหม่หรือปักหมุดเอง" : "ระบุตำแหน่งไม่ได้ กรุณาปักหมุดบนแผนที่";
+        setError(message); setBusy(false);
+      },
+      { enableHighAccuracy: true, timeout: 15_000, maximumAge: 30_000 },
+    );
+  }
+
+  return <div className="space-y-3">
+    <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+      <span>ตำแหน่ง: <output>{initialLat.toFixed(6)}, {initialLng.toFixed(6)}</output></span>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={useMapCenter} className="rounded-lg border border-slate-300 bg-white px-3 py-2 font-semibold hover:bg-slate-50">วางหมุดตรงกลาง</button>
+        <button type="button" disabled={busy} onClick={useCurrentLocation} className="rounded-lg border border-slate-300 bg-white px-3 py-2 font-semibold hover:bg-slate-50 disabled:opacity-50">{busy ? "กำลังหาตำแหน่ง…" : "ใช้ตำแหน่งปัจจุบัน"}</button>
+      </div>
+    </div>
+    {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+    {tileError && <p role="status" className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">ภาพแผนที่โหลดไม่ครบ แต่ยังลากหรือวางหมุดและบันทึกพิกัดได้ กรุณาตรวจอินเทอร์เน็ตแล้วลองใหม่</p>}
+    <div className="relative">
+      <div ref={containerRef} className="location-picker-map h-80 rounded-xl border border-slate-300 bg-slate-100" aria-label="แผนที่เลือกตำแหน่ง แตะบนแผนที่ ลากหมุด หรือใช้ปุ่มวางหมุดตรงกลาง" />
+      <span className="pointer-events-none absolute left-1/2 top-1/2 z-[400] h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-indigo-600 shadow" aria-hidden="true" />
+    </div>
+    <p className="text-sm text-slate-600">แตะบนแผนที่ ลากหมุด หรือเลื่อนแผนที่แล้วกด “วางหมุดตรงกลาง” หากใช้ GPS ไม่ได้</p>
+  </div>;
 }

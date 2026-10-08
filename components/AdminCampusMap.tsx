@@ -72,9 +72,14 @@ export default function AdminCampusMap({ tickets }: AdminCampusMapProps) {
       // Leaflet can measure the container before the responsive layout settles.
       // Recalculate after paint and whenever the desktop content width changes.
       requestAnimationFrame(() => map.invalidateSize());
-      const resizeObserver = new ResizeObserver(() => map.invalidateSize({ pan: false }));
-      resizeObserver.observe(mapContainerRef.current);
-      map.on("unload", () => resizeObserver.disconnect());
+      const refresh = () => map.invalidateSize({ pan: false });
+      if (typeof ResizeObserver !== "undefined") {
+        const resizeObserver = new ResizeObserver(refresh);
+        resizeObserver.observe(mapContainerRef.current);
+        map.on("unload", () => resizeObserver.disconnect());
+      } else {
+        window.addEventListener("resize", refresh, { once: true });
+      }
     }
 
     const map = mapInstanceRef.current;
