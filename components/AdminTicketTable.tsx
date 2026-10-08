@@ -57,6 +57,8 @@ export default function AdminTicketTable({
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
   // Assignment Modal state
   const [selectedTicket, setSelectedTicket] = useState<TicketItem | null>(null);
@@ -78,8 +80,11 @@ export default function AdminTicketTable({
     const matchesStatus = statusFilter === "ALL" || t.status === statusFilter;
     const matchesCategory =
       categoryFilter === "ALL" || t.category.id.toString() === categoryFilter;
+    const created = new Date(t.createdAt);
+    const matchesFrom = !fromDate || created >= new Date(`${fromDate}T00:00:00+07:00`);
+    const matchesTo = !toDate || created < new Date(new Date(`${toDate}T00:00:00+07:00`).getTime()+86400000);
 
-    return matchesSearch && matchesStatus && matchesCategory;
+    return matchesSearch && matchesStatus && matchesCategory && matchesFrom && matchesTo;
   });
   const safePage = Math.min(page, Math.max(1, Math.ceil(filteredTickets.length / 20)));
   const pagedTickets = filteredTickets.slice((safePage - 1) * 20, safePage * 20);
@@ -175,7 +180,7 @@ export default function AdminTicketTable({
   return (
     <div className="space-y-4">
       {/* Search and Filters Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
         {/* Search Input */}
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -190,6 +195,8 @@ export default function AdminTicketTable({
         </div>
 
         <select aria-label="กรองหมวดหมู่" value={categoryFilter} onChange={e=>{setCategoryFilter(e.target.value);setPage(1);}} className="rounded-lg border p-2 text-sm"><option value="ALL">ทุกหมวดหมู่</option>{Array.from(new Map(initialTickets.map(t=>[t.category.id,t.category])).values()).map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select>
+        <label className="text-sm text-slate-600">ตั้งแต่<input aria-label="วันที่เริ่มต้น" type="date" value={fromDate} onChange={e=>{setFromDate(e.target.value);setPage(1);}} className="ml-2 rounded-lg border p-2"/></label>
+        <label className="text-sm text-slate-600">ถึง<input aria-label="วันที่สิ้นสุด" type="date" value={toDate} onChange={e=>{setToDate(e.target.value);setPage(1);}} className="ml-2 rounded-lg border p-2"/></label>
         {/* Filter by Status Pills */}
         <div className="flex flex-wrap items-center gap-1.5 text-xs">
           {[

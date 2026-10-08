@@ -5,7 +5,7 @@ services:
     plan: free
     autoDeploy: true
     healthCheckPath: /api/health
-    buildCommand: npm ci && npx prisma generate && npx next build
+    buildCommand: npm ci && npx prisma generate && npx prisma migrate deploy && npx next build
     startCommand: npm run start
     envVars:
       - key: NODE_ENV
@@ -13,4 +13,14 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: DIRECT_URL
+        sync: false
+      - key: APP_ORIGIN
+        value: https://bru-fondue.onrender.com
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: LINE_CHANNEL_ID
+        sync: false
+      - key: LINE_CHANNEL_SECRET
         sync: false

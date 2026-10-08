@@ -18,6 +18,7 @@ model User {
   faculty      String?
   department   String?
   avatarUrl    String?
+  googleSub    String?   @unique
   lineUserId   String?   @unique
   notificationReadAt DateTime?
   createdAt    DateTime  @default(now())
@@ -31,6 +32,7 @@ model User {
   evaluations       Evaluation[]
   credential        AuthCredential?
   sessions          AuthSession[]
+  defaultCategories Category[]           @relation("DefaultTechnicianCategories")
 
   @@map("users")
 }
@@ -83,8 +85,12 @@ model Category {
   name        String   @unique
   description String?
   icon        String?
+  defaultTechnicianId String?
+  defaultTechnician   User?    @relation("DefaultTechnicianCategories", fields: [defaultTechnicianId], references: [id], onDelete: SetNull)
 
   tickets     Ticket[]
+
+  @@index([defaultTechnicianId])
 
   @@map("categories")
 }

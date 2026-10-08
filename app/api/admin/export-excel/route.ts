@@ -1,95 +1,14 @@
-import { reportFilter, statusLabels, thaiDate } from "@/lib/reporting";
-import { latestAssignmentOrder } from "@/lib/permissions";
-import { csvCell } from "@/lib/csv";
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth";
+import ExcelJS from "exceljs";
+import {reportFilter,statusLabels} from "@/lib/reporting";
+import {latestAssignmentOrder} from "@/lib/permissions";
+import {NextResponse} from "next/server";
+import {prisma} from "@/lib/prisma";
+import {getCurrentUser} from "@/lib/auth";
 
-export async function GET(request: Request) {
-  try {
-    const user = await getCurrentUser();
-    if (!user || (user.role !== "ADMIN" && user.role !== "SUPERADMIN")) {
-      return NextResponse.json({ error: "เฉพาะเจ้าหน้าที่กองอาคารสถานที่เท่านั้น" }, { status: 403 });
-    }
-
-    let filter;
-    try { filter = reportFilter(Object.fromEntries(Array.from(new URL(request.url).searchParams.keys(), key => { const values = new URL(request.url).searchParams.getAll(key); return [key, values.length > 1 ? values : values[0]]; }))); } catch { return NextResponse.json({error:"ตัวกรองไม่ถูกต้อง"},{status:400}); }
-    const tickets = await prisma.ticket.findMany({
-      where: filter.where,
-      include: {
-        building: true,
-        category: true,
-        reporter: true,
-        assignments: {
-          orderBy: latestAssignmentOrder, take: 1,
-          include: { technician: true },
-        },
-        evaluation: true,
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    // CSV Header with UTF-8 BOM for Thai support in Windows Excel
-    const header = [
-      "รหัสคำร้อง",
-      "หัวข้อปัญหา",
-      "หมวดหมู่",
-      "สถานที่",
-      "อาคารอ้างอิง",
-      "ระดับความเร่งด่วน",
-      "สถานะ",
-      "ผู้แจ้ง",
-      "เบอร์โทรผู้แจ้ง",
-      "ช่างผู้รับผิดชอบ",
-      "วันที่แจ้ง",
-      "วันที่เสร็จสิ้น",
-      "คะแนนประเมิน (ดาว)",
-      "ข้อคิดเห็นประเมิน",
-    ];
-
-    const rows = tickets.map((t) => {
-      const technicianName = t.assignments[0]?.technician.name || "ยังไม่ได้มอบหมาย";
-      const resolvedDate = t.resolvedAt
-        ? thaiDate(t.resolvedAt)
-        : "-";
-      const evalScore = t.evaluation ? t.evaluation.score.toString() : "-";
-      const evalComment = t.evaluation?.comment || "-";
-
-      const statusTh = statusLabels[t.status] || t.status;
-
-      return [
-        t.ticketCode,
-        t.title,
-        t.category.name,
-        t.room || t.locationNote || t.building.name,
-        t.building.name,
-        t.priority,
-        statusTh,
-        t.reporter.name,
-        t.reporter.phoneNumber || "-",
-        technicianName,
-        thaiDate(t.createdAt),
-        resolvedDate,
-        evalScore,
-        evalComment,
-      ].map(csvCell).join(",");
-    });
-
-    const csvContent = "\uFEFF" + [header.map(csvCell).join(","), ...rows].join("\r\n");
-
-    const dateStr = new Date().toISOString().split("T")[0];
-    const filename = `BRU-Fondue-Report-${dateStr}.csv`;
-
-    return new NextResponse(csvContent, {
-      headers: {
-        "Cache-Control": "private, no-store",
-        "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": `attachment; filename="${filename}"`,
-      },
-    });
-  } catch (error) {
-    console.error("Export CSV error:", error);
-    return NextResponse.json({ error: "ไม่สามารถส่งออกข้อมูลได้" }, { status: 500 });
-  }
-}
-
+export async function GET(request:Request){try{const user=await getCurrentUser();if(!user||!['ADMIN','SUPERADMIN'].includes(user.role))return NextResponse.json({error:"เฉพาะผู้ดูแลระบบเท่านั้น"},{status:403});const url=new URL(request.url);let filter;try{filter=reportFilter(Object.fromEntries(Array.from(url.searchParams.keys(),key=>{const values=url.searchParams.getAll(key);return [key,values.length>1?values:values[0]];})));}catch{return NextResponse.json({error:"ตัวกรองไม่ถูกต้อง"},{status:400});}
+ const tickets=await prisma.ticket.findMany({where:filter.where,include:{building:true,category:true,reporter:true,assignments:{orderBy:latestAssignmentOrder,take:1,include:{technician:true}},evaluation:true},orderBy:{createdAt:'desc'}});
+ const book=new ExcelJS.Workbook();book.creator="BRU Fondue";book.created=new Date();const sheet=book.addWorksheet("รายงานคำร้อง",{views:[{state:'frozen',ySplit:1}]});sheet.columns=[['รหัสคำร้อง','ticketCode',24],['หัวข้อปัญหา','title',34],['หมวดหมู่','category',24],['สถานที่','location',36],['อาคาร','building',34],['ความเร่งด่วน','priority',16],['สถานะ','status',20],['ผู้แจ้ง','reporter',24],['เบอร์โทร','phone',18],['ช่างผู้รับผิดชอบ','technician',26],['วันที่แจ้ง','createdAt',21],['วันที่เสร็จ','resolvedAt',21],['คะแนน','score',12],['ข้อคิดเห็น','comment',34]].map(([header,key,width])=>({header:String(header),key:String(key),width:Number(width)}));
+ sheet.getRow(1).font={bold:true,color:{argb:'FFFFFFFF'}};sheet.getRow(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF312E81'}};sheet.getRow(1).alignment={vertical:'middle'};sheet.autoFilter={from:'A1',to:'N1'};
+ for(const t of tickets)sheet.addRow({ticketCode:t.ticketCode,title:t.title,category:t.category.name,location:t.room||t.locationNote||t.building.name,building:t.building.name,priority:t.priority,status:statusLabels[t.status]||t.status,reporter:t.reporter.name,phone:t.reporter.phoneNumber||'-',technician:t.assignments[0]?.technician.name||'ยังไม่ได้มอบหมาย',createdAt:t.createdAt,resolvedAt:t.resolvedAt||null,score:t.evaluation?.score||null,comment:t.evaluation?.comment||'-'});
+ sheet.getColumn('K').numFmt='dd/mm/yyyy hh:mm';sheet.getColumn('L').numFmt='dd/mm/yyyy hh:mm';sheet.eachRow((row,index)=>{row.alignment={vertical:'top',wrapText:true};if(index>1&&index%2===0)row.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF8FAFC'}};});const buffer=await book.xlsx.writeBuffer();const date=new Date().toISOString().slice(0,10);return new NextResponse(new Uint8Array(buffer),{headers:{'Cache-Control':'private, no-store','Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','Content-Disposition':`attachment; filename="BRU-Fondue-Report-${date}.xlsx"`}});
+ }catch(error){console.error('Export Excel error',error);return NextResponse.json({error:'ไม่สามารถสร้างไฟล์ Excel ได้'},{status:500});}}

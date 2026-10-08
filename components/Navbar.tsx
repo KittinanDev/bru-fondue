@@ -41,7 +41,7 @@ export default async function Navbar() {
             <details className="account-menu">
               <summary aria-label="บัญชีผู้ใช้" className="account-trigger"><UserRound size={17} /><span>บัญชี</span><ChevronDown size={13} /></summary>
               <div className="account-panel">
-                <div><p className="text-sm font-medium text-slate-900">{user.name}</p><p className="mt-1 text-xs text-slate-500">{roleLabel}</p>{isAdmin(user)&&<Link href="/admin/users" className="mt-3 block text-sm font-semibold text-indigo-600">จัดการผู้ใช้งาน</Link>}</div>
+                <div><p className="text-sm font-medium text-slate-900">{user.name}</p><p className="mt-1 text-xs text-slate-500">{roleLabel}</p><Link href="/profile" className="mt-3 block text-sm font-semibold text-indigo-600">แก้ไขโปรไฟล์</Link>{role==="TECHNICIAN"&&<Link href="/technician/history" className="mt-2 block text-sm font-semibold text-indigo-600">ประวัติการทำงาน</Link>}{isAdmin(user)&&<Link href="/admin/users" className="mt-2 block text-sm font-semibold text-indigo-600">จัดการผู้ใช้งาน</Link>}</div>
                 <LogoutButton />
               </div>
             </details>

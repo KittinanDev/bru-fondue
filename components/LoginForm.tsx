@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Eye, EyeOff } from "lucide-react";
-export default function LoginForm({ returnTo }: { returnTo: string | null }) {
+export default function LoginForm({ returnTo, googleEnabled, lineEnabled }: { returnTo: string | null; googleEnabled: boolean; lineEnabled: boolean }) {
   const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -25,12 +25,12 @@ export default function LoginForm({ returnTo }: { returnTo: string | null }) {
     }
   }
   const inputStyle = "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100";
-  return <form onSubmit={submit} className="mt-8 space-y-5">
+  return <><form onSubmit={submit} className="mt-8 space-y-5">
     {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
     <div><label htmlFor="login-email" className="mb-2 block text-sm font-medium">อีเมล</label><input id="login-email" className={inputStyle} type="email" name="email" autoComplete="username" autoCapitalize="none" spellCheck={false} maxLength={254} required placeholder="name@bru.ac.th" disabled={busy}/></div>
     <div><label htmlFor="login-password" className="mb-2 block text-sm font-medium">รหัสผ่าน</label><div className="relative"><input id="login-password" className={`${inputStyle} pr-12`} type={visible ? "text" : "password"} name="password" autoComplete="current-password" maxLength={128} required disabled={busy}/><button type="button" onClick={()=>setVisible(!visible)} aria-label={visible?"ซ่อนรหัสผ่าน":"แสดงรหัสผ่าน"} aria-pressed={visible} className="absolute right-1 top-1 grid h-10 w-10 place-items-center rounded-lg text-slate-500">{visible?<EyeOff size={18}/>:<Eye size={18}/>}</button></div></div>
     <button type="submit" disabled={busy} className="flex w-full items-center justify-center gap-3 rounded-xl bg-indigo-600 px-5 py-3.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60">{busy?"กำลังเข้าสู่ระบบ…":"เข้าสู่ระบบ"}<ArrowRight size={17}/></button>
     <p className="text-center text-sm text-slate-600">ยังไม่มีบัญชี? <Link href="/register" className="font-semibold text-indigo-600 hover:text-indigo-700">สมัครสมาชิก</Link></p>
     <p className="text-center text-xs leading-relaxed text-slate-500">ลืมรหัสผ่าน? ติดต่อผู้ดูแลระบบเพื่อขอตั้งรหัสผ่านใหม่</p>
-  </form>;
+  </form>{(googleEnabled||lineEnabled)&&<div className="mt-6"><div className="flex items-center gap-3 text-sm text-slate-400"><span className="h-px flex-1 bg-slate-200"/>หรือเข้าสู่ระบบด้วย<span className="h-px flex-1 bg-slate-200"/></div><div className="mt-4 grid gap-3">{googleEnabled&&<a className="flex min-h-12 items-center justify-center rounded-xl border border-slate-300 bg-white font-semibold text-slate-800 hover:bg-slate-50" href={`/api/auth/oauth/google?next=${encodeURIComponent(returnTo||'')}`}>Google @bru.ac.th</a>}{lineEnabled&&<a className="flex min-h-12 items-center justify-center rounded-xl bg-[#06C755] font-semibold text-white hover:bg-[#05b54d]" href={`/api/auth/oauth/line?next=${encodeURIComponent(returnTo||'')}`}>LINE Login</a>}</div></div>}</>;
 }

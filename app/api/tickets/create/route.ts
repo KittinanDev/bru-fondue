@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     if (!Array.isArray(rawImages) || rawImages.length > MAX_IMAGES) throw new InputError("แนบรูปภาพได้สูงสุด 4 รูป");
     const [building, category] = await Promise.all([
       prisma.building.findUnique({ where: { id: buildingId }, select: { id: true } }),
-      prisma.category.findUnique({ where: { id: categoryId }, select: { id: true } }),
+      prisma.category.findUnique({ where: { id: categoryId }, select: { id: true, defaultTechnicianId: true, defaultTechnician: { select: { name: true, role: true, credential: { select: { disabledAt: true } } } } } }),
     ]);
     if (!building || !category) throw new InputError("ไม่พบอาคารหรือหมวดหมู่ที่เลือก กรุณาโหลดหน้าใหม่", 404);
     const images: string[] = [];
@@ -37,8 +37,11 @@ export async function POST(request: Request) {
     const createTicket = async () => {
     const ticketCode = `${prefix}-${randomBytes(6).toString("hex").toUpperCase()}`;
     const ticket = await prisma.$transaction(async tx => {
-      const created = await tx.ticket.create({ data: { ticketCode, title, description, status: "PENDING", priority, categoryId, buildingId, locationNote: location, room: location, ...coords, reporterId: user.id } });
-      await tx.ticketStatusLog.create({ data: { ticketId: created.id, status: "PENDING", note: `ผู้แจ้ง (${user.name}) ส่งคำร้องแจ้งปัญหาเข้าระบบเรียบร้อยแล้ว`, changedById: user.id } });
+      const autoTechnicianId=category.defaultTechnicianId&&category.defaultTechnician?.role==="TECHNICIAN"&&!category.defaultTechnician.credential?.disabledAt?category.defaultTechnicianId:null;
+      const initialStatus=autoTechnicianId?"IN_PROGRESS":"PENDING";
+      const created = await tx.ticket.create({ data: { ticketCode, title, description, status: initialStatus, priority, categoryId, buildingId, locationNote: location, room: location, ...coords, reporterId: user.id } });
+      if(autoTechnicianId)await tx.ticketAssignment.create({data:{ticketId:created.id,technicianId:autoTechnicianId,assignedById:user.id}});
+      await tx.ticketStatusLog.create({ data: { ticketId: created.id, status: initialStatus, note: autoTechnicianId?`ระบบมอบหมายงานอัตโนมัติให้ ${category.defaultTechnician!.name} ตามหมวดหมู่`:`ผู้แจ้ง (${user.name}) ส่งคำร้องแจ้งปัญหาเข้าระบบเรียบร้อยแล้ว`, changedById: user.id } });
       for (const imageUrl of images) await tx.ticketImage.create({ data: { ticketId: created.id, imageUrl, imageType: "BEFORE", uploadedById: user.id } });
       return created;
     });

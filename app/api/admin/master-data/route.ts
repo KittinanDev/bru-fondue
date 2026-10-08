@@ -23,10 +23,12 @@ export async function POST(request:Request){
  return id?tx.building.update({where:{id},data}):tx.building.create({data});
  }
  const description=textField(body.description,'คำอธิบาย',500,true)||null;
+ const defaultTechnicianId=body.defaultTechnicianId===null||body.defaultTechnicianId===''?null:textField(body.defaultTechnicianId,'ช่างประจำหมวดหมู่',80);
+ if(defaultTechnicianId){const technician=await tx.user.findUnique({where:{id:defaultTechnicianId},select:{role:true,credential:{select:{disabledAt:true}}}});if(!technician||technician.role!=='TECHNICIAN'||technician.credential?.disabledAt)throw new InputError('ไม่พบบัญชีช่างที่พร้อมใช้งาน',404);}
  const current=id?await tx.category.findUnique({where:{id}}):null;if(id&&!current)throw new InputError('ไม่พบหมวดหมู่',404);
  if(current && body.expected!==JSON.stringify(current))throw new InputError('ข้อมูลถูกแก้ไขแล้ว กรุณาโหลดหน้าใหม่',409);
  const all=await tx.category.findMany();if(all.some(x=>x.id!==id && x.name.normalize('NFC').toLowerCase()===name.toLowerCase()))throw new InputError('ชื่อหมวดหมู่นี้มีอยู่แล้ว',409);
- return id?tx.category.update({where:{id},data:{name,description}}):tx.category.create({data:{name,description}});
+ return id?tx.category.update({where:{id},data:{name,description,defaultTechnicianId}}):tx.category.create({data:{name,description,defaultTechnicianId}});
  });
  return NextResponse.json({success:true,item:result});
  }catch(error){if(error instanceof Prisma.PrismaClientKnownRequestError&&error.code==='P2002')return NextResponse.json({error:'ชื่อหรือรหัสนี้มีอยู่แล้ว'},{status:409});const response=inputErrorResponse(error);if(response)return response;console.error('Master data update failed',error);return NextResponse.json({error:'บันทึกไม่สำเร็จ กรุณาลองใหม่'},{status:500});}

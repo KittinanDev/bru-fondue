@@ -5,5 +5,5 @@ export function workspaceForRole(role: string): string {
 }
 export function safeReturnPath(value: unknown): string | null {
   if (typeof value !== "string") return null;
-  return /^\/(?:report|notifications|my-tickets|technician\/jobs|admin\/(?:tickets|dashboard|settings|users|reports\/pdf)|tickets\/[a-zA-Z0-9-]+)$/.test(value) ? value : null;
+  return /^\/(?:profile|report|notifications|my-tickets|technician\/(?:jobs|history)|admin\/(?:tickets|dashboard|settings|users|reports\/pdf)|tickets\/[a-zA-Z0-9-]+)$/.test(value) ? value : null;
 }
