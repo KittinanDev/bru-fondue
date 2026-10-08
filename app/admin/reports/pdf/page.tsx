@@ -208,8 +208,8 @@ export default async function AdminPdfReportPage({searchParams}: {searchParams: 
           <div className="space-y-12">
             <div>
               <p className="text-slate-500">ลงชื่อ ..............................................................</p>
-              <p className="font-bold text-slate-800 mt-2">(ผู้ช่วยศาสตราจารย์ ดร.วิไลรัตน์ ยาทองไชย)</p>
-              <p className="text-slate-500 text-[11px]">อาจารย์ที่ปรึกษาโครงงาน / ผู้บริหารจัดการระบบ</p>
+              <p className="font-bold text-slate-800 mt-2">(admin ผู้ดูแลระบบ)</p>
+              <p className="text-slate-500 text-[11px]">ผู้ดูแลระบบ</p>
               <p className="text-slate-400 text-[10px]">มหาวิทยาลัยราชภัฏบุรีรัมย์</p>
             </div>
           </div>

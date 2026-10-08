@@ -38,7 +38,7 @@ async function main() {
   const defaultAccounts = [
     {
       id: "user-admin-1",
-      name: "ผศ. ดร.วิไลรัตน์ ยาทองไชย (เจ้าหน้าที่กองอาคาร)",
+      name: "admin ผู้ดูแลระบบ",
       email: "wilairat.y@bru.ac.th",
       role: "ADMIN",
       studentId: "ADMIN-001",
