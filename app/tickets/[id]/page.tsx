@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import TechnicianActionConsole from "@/components/TechnicianActionConsole";
 import AdminTicketAssignment from "@/components/AdminTicketAssignment";
 import TicketEvaluationCard from "@/components/TicketEvaluationCard";
+import TicketEditModal from "@/components/TicketEditModal";
 import AccessDenied from "@/components/AccessDenied";
 import { statusLabels } from "@/lib/reporting";
 import { canViewTicket, canManageTicket, canEvaluateTicket, latestAssignmentOrder } from "@/lib/permissions";
@@ -104,11 +105,21 @@ export default async function TicketDetailPage({
 
   const statusBadge = getStatusBadge(ticket.status);
   const admin = isAdmin(currentUser);
-  const technicians = admin ? await prisma.user.findMany({
-    where: { role: "TECHNICIAN" },
-    select: { id: true, name: true, department: true },
-    orderBy: { name: "asc" },
-  }) : [];
+  const [technicians, categories, buildings] = await Promise.all([
+    admin
+      ? prisma.user.findMany({
+          where: { role: "TECHNICIAN" },
+          select: { id: true, name: true, department: true },
+          orderBy: { name: "asc" },
+        })
+      : Promise.resolve([]),
+    prisma.category.findMany({ select: { id: true, name: true }, orderBy: { id: "asc" } }),
+    prisma.building.findMany({ select: { id: true, name: true, defaultLat: true, defaultLng: true }, orderBy: { id: "asc" } }),
+  ]);
+
+  const canEditTicket =
+    (currentUser.id === ticket.reporterId || admin) &&
+    !["COMPLETED", "REJECTED", "CANCELLED"].includes(ticket.status);
 
   // Smart back link based on user role
   const backHref =
@@ -194,6 +205,27 @@ export default async function TicketDetailPage({
               <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-lg border ${statusBadge.bg}`}>
                 {statusBadge.label}
               </span>
+              {canEditTicket && (
+                <TicketEditModal
+                  ticket={{
+                    id: ticket.id,
+                    ticketCode: ticket.ticketCode,
+                    title: ticket.title,
+                    description: ticket.description,
+                    categoryId: ticket.categoryId,
+                    buildingId: ticket.buildingId,
+                    room: ticket.room,
+                    locationNote: ticket.locationNote,
+                    priority: ticket.priority,
+                    status: ticket.status,
+                    updatedAt: ticket.updatedAt.toISOString(),
+                    latitude: ticket.latitude,
+                    longitude: ticket.longitude,
+                  }}
+                  categories={categories}
+                  buildings={buildings}
+                />
+              )}
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 leading-snug">
               {ticket.title}
