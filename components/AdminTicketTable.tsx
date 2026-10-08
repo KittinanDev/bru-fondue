@@ -81,6 +81,8 @@ export default function AdminTicketTable({
 
     return matchesSearch && matchesStatus && matchesCategory;
   });
+  const safePage = Math.min(page, Math.max(1, Math.ceil(filteredTickets.length / 20)));
+  const pagedTickets = filteredTickets.slice((safePage - 1) * 20, safePage * 20);
 
   const handleOpenAssignModal = (ticket: TicketItem) => {
     setSelectedTicket(ticket);
@@ -168,6 +170,7 @@ export default function AdminTicketTable({
         return "bg-slate-100 text-slate-600";
     }
   };
+  const priorityLabel = (value:string) => ({LOW:"ต่ำ",MEDIUM:"ปานกลาง",HIGH:"สูง",URGENT:"เร่งด่วน"}[value] || value);
 
   return (
     <div className="space-y-4">
@@ -215,10 +218,39 @@ export default function AdminTicketTable({
       </div>
 
       <div className="flex items-center justify-between gap-3 text-sm"><span>พบ {filteredTickets.length} รายการ</span><div className="flex gap-3"><button disabled={page<=1} onClick={()=>setPage(p=>p-1)} className="rounded border px-3 py-2 disabled:opacity-40">ก่อนหน้า</button><button disabled={page*20>=filteredTickets.length} onClick={()=>setPage(p=>p+1)} className="rounded border px-3 py-2 disabled:opacity-40">ถัดไป</button></div></div>
+      {/* Mobile and narrow-screen ticket cards */}
+      <div className="grid gap-3 xl:hidden">
+        {pagedTickets.map((t) => {
+          const statusBadge = getStatusBadge(t.status);
+          const currentTech = t.assignments[0]?.technician;
+          const isAssigned = Boolean(currentTech);
+          return <article key={t.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
+            <div className="flex items-start justify-between gap-3">
+              <Link href={`/tickets/${t.id}`} className="font-mono text-sm font-bold text-indigo-600">{t.ticketCode}</Link>
+              <span className={`shrink-0 rounded-full border px-2.5 py-1 text-sm font-semibold ${statusBadge.bg}`}>{statusBadge.label}</span>
+            </div>
+            <h3 className="mt-3 text-lg font-semibold leading-snug text-slate-900">{t.title}</h3>
+            <p className="mt-2 text-sm text-slate-600">{t.room || t.locationNote || t.building.name}</p>
+            {t.room && <p className="text-sm text-slate-500">{t.building.name}</p>}
+            <div className="mt-4 flex flex-wrap gap-2 text-sm">
+              <span className="rounded-lg bg-slate-100 px-2.5 py-1">{t.category.name}</span>
+              <span className={`rounded-lg px-2.5 py-1 ${getPriorityBadge(t.priority)}`}>{priorityLabel(t.priority)}</span>
+            </div>
+            <div className="mt-4 border-t border-slate-100 pt-3 text-sm text-slate-600">
+              {currentTech ? `ช่างผู้รับผิดชอบ: ${currentTech.name}` : "ยังไม่ได้จ่ายงาน"}
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              {t.status !== "COMPLETED" && t.status !== "REJECTED" && t.status !== "CANCELLED" && <button onClick={()=>handleOpenAssignModal(t)} className="flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-3 py-2.5 font-semibold text-white"><Wrench className="h-4 w-4"/>{isAssigned ? "เปลี่ยนช่าง" : "จ่ายงานช่าง"}</button>}
+              <Link href={`/tickets/${t.id}`} className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 px-3 py-2.5 font-semibold text-slate-700"><ExternalLink className="h-4 w-4"/>ดูรายละเอียด</Link>
+            </div>
+          </article>;
+        })}
+      </div>
       {/* Ticket Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+      <div className="hidden bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden xl:block">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full min-w-[1240px] table-fixed text-left text-xs">
+            <colgroup><col className="w-[150px]"/><col className="w-[280px]"/><col className="w-[250px]"/><col className="w-[170px]"/><col className="w-[130px]"/><col className="w-[150px]"/><col className="w-[230px]"/><col className="w-[170px]"/></colgroup>
             <thead className="bg-slate-50/80 text-slate-600 uppercase font-bold border-b border-slate-200">
               <tr>
                 <th className="p-3.5">รหัสคำร้อง</th>
@@ -239,7 +271,7 @@ export default function AdminTicketTable({
                   </td>
                 </tr>
               ) : (
-                filteredTickets.slice((Math.min(page, Math.max(1,Math.ceil(filteredTickets.length/20)))-1)*20,Math.min(page, Math.max(1,Math.ceil(filteredTickets.length/20)))*20).map((t) => {
+                pagedTickets.map((t) => {
                   const statusBadge = getStatusBadge(t.status);
                   const isAssigned = t.assignments.length > 0;
                   const currentTech = t.assignments[0]?.technician;
@@ -254,8 +286,8 @@ export default function AdminTicketTable({
                       </td>
 
                       {/* Title */}
-                      <td className="p-3.5 max-w-xs">
-                        <div className="font-semibold text-slate-800 line-clamp-1">{t.title}</div>
+                      <td className="p-3.5 break-normal">
+                        <div className="font-semibold text-slate-800 line-clamp-2">{t.title}</div>
                         <div className="text-[11px] text-slate-400">
                           โดย: {t.reporter.name}
                         </div>
@@ -279,7 +311,7 @@ export default function AdminTicketTable({
                       {/* Priority */}
                       <td className="p-3.5 whitespace-nowrap">
                         <span className={`px-2 py-0.5 rounded text-[10px] ${getPriorityBadge(t.priority)}`}>
-                          {t.priority}
+                          {priorityLabel(t.priority)}
                         </span>
                       </td>
 

@@ -1,21 +1,24 @@
-import { unreadNotifications } from "@/lib/notifications";
+import { recentNotifications, unreadNotifications } from "@/lib/notifications";
 import Link from "next/link";
 import { ArrowUpRight, Asterisk, ChevronDown, UserRound } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { workspaceForRole } from "@/lib/auth-shared";
 import { canReportTicket, isAdmin } from "@/lib/permissions";
 import LogoutButton from "./LogoutButton";
+import NotificationMenu from "./NotificationMenu";
+import MobileBottomNav from "./MobileBottomNav";
 
 export default async function Navbar() {
   const user = await getCurrentUser();
   const role = user?.role;
-  const unread = user ? await unreadNotifications(user) : 0;
+  const [unread,notices] = user ? await Promise.all([unreadNotifications(user),recentNotifications(user)]) : [0,[]];
   const reporter = canReportTicket(user);
   const roleLabel = role === "STUDENT" ? "นักศึกษา" : role === "STAFF" ? "บุคลากร" : role === "TECHNICIAN" ? "ช่างซ่อมบำรุง" : role === "SUPERADMIN" ? "ผู้ดูแลระบบสูงสุด" : "ผู้ดูแลระบบ";
   const actionHref = !user ? "/login" : reporter ? "/report" : workspaceForRole(user.role);
   const actionLabel = !user ? "เข้าสู่ระบบ" : reporter ? "แจ้งปัญหา" : isAdmin(user) ? "จัดการคำร้อง" : "งานของฉัน";
 
   return (
+    <>
     <header className="site-header">
       <nav className="section-container nav-inner" aria-label="เมนูหลัก">
         <Link href="/" className="brand" aria-label="BRU Fondue หน้าหลัก">
@@ -27,10 +30,10 @@ export default async function Navbar() {
           {reporter && <Link href="/my-tickets">คำร้องของฉัน</Link>}
           {isAdmin(user) && <Link href="/admin/dashboard">สถิติและรายงาน</Link>}
           {isAdmin(user) && <Link href="/admin/settings">ข้อมูลพื้นฐาน</Link>}
-          {user && <Link href="/notifications">แจ้งเตือน{unread > 0 ? ` (${unread > 99 ? "99+" : unread})` : ""}</Link>}
           <Link href="/#how-it-works">วิธีใช้งาน</Link>
         </div>
         <div className="nav-actions">
+          {user && <NotificationMenu unread={unread} notices={notices}/>} 
           <Link href={actionHref} className="button nav-cta">{actionLabel}<ArrowUpRight size={16} /></Link>
           {user && (
             <details className="account-menu">
@@ -44,5 +47,7 @@ export default async function Navbar() {
         </div>
       </nav>
     </header>
+    {user&&<MobileBottomNav role={user.role} unread={unread}/>} 
+    </>
   );
 }

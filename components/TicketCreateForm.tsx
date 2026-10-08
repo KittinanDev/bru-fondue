@@ -75,6 +75,15 @@ export default function TicketCreateForm({
   const [images, setImages] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [step, setStep] = useState(1);
+
+  const goNext = () => {
+    setErrorMsg(null);
+    if (step === 1 && (!title.trim() || !description.trim())) { setErrorMsg("กรุณากรอกหัวข้อและรายละเอียดปัญหาให้ครบ"); return; }
+    if (step === 2 && !location.trim()) { setErrorMsg("กรุณาระบุสถานที่ที่พบปัญหา"); return; }
+    setStep(value => Math.min(3, value + 1));
+    window.scrollTo({top:0,behavior:"smooth"});
+  };
 
   // Helper icons
   const getCategoryIcon = (id: number) => {
@@ -163,6 +172,9 @@ export default function TicketCreateForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
+      <div className="report-progress" aria-label={`ขั้น ${step} จาก 3`}>
+        {["อธิบายปัญหา","ระบุสถานที่","รูปภาพและส่ง"].map((label,index)=>{const number=index+1;return <div key={label} className={number===step?"is-current":number<step?"is-complete":""}><span>{number<step?"✓":number}</span><b>{label}</b></div>})}
+      </div>
       {errorMsg && (
         <div role="alert" className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-sm flex items-center gap-2">
           <AlertCircle className="w-5 h-5 shrink-0" />
@@ -171,7 +183,7 @@ export default function TicketCreateForm({
       )}
 
       {/* 1. Category Selection */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+      <div className={`${step===1?"":"hidden"} bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4`}>
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
@@ -222,7 +234,7 @@ export default function TicketCreateForm({
       </div>
 
       {/* 2. Photo Upload (Before Image) */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+      <div className={`${step===3?"":"hidden"} bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4`}>
         <div>
           <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
             <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs flex items-center justify-center font-bold">
@@ -274,7 +286,7 @@ export default function TicketCreateForm({
       </div>
 
       {/* 3. Location & Indoor Details */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-5">
+      <div className={`${step===2?"":"hidden"} bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-5`}>
         <div>
           <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
             <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs flex items-center justify-center font-bold">
@@ -351,7 +363,7 @@ export default function TicketCreateForm({
       </div>
 
       {/* 4. Issue Description & Urgency */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-5">
+      <div className={`${step===1?"":"hidden"} bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-5`}>
         <div>
           <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
             <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs flex items-center justify-center font-bold">
@@ -420,12 +432,14 @@ export default function TicketCreateForm({
       </div>
 
       {/* Submit Button */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+      <div className="report-step-actions flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
         <div className="text-xs text-slate-400">
           ผู้แจ้ง: <span className="font-semibold text-slate-700">{currentUserName}</span> • ระบบจะส่งเรื่องให้กองอาคารสถานที่ตรวจสอบทันที
         </div>
 
-        <button
+        <div className="flex w-full gap-3 sm:w-auto">
+        {step>1&&<button type="button" onClick={()=>setStep(value=>value-1)} className="flex-1 rounded-xl border border-slate-300 px-6 py-3.5 font-semibold text-slate-700 sm:flex-none">ย้อนกลับ</button>}
+        {step<3?<button type="button" onClick={goNext} className="flex-1 rounded-xl bg-indigo-600 px-8 py-3.5 font-bold text-white sm:flex-none">ถัดไป</button>:<button
           type="submit"
           disabled={submitting || readingImages}
           className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold text-sm rounded-xl shadow-md shadow-indigo-200 transition-all disabled:opacity-50"
@@ -438,7 +452,8 @@ export default function TicketCreateForm({
               ส่งคำร้องแจ้งซ่อมทันที
             </>
           )}
-        </button>
+        </button>}
+        </div>
       </div>
     </form>
   );

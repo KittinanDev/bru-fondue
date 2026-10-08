@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import TechnicianActionConsole from "@/components/TechnicianActionConsole";
 import TicketEvaluationCard from "@/components/TicketEvaluationCard";
 import AccessDenied from "@/components/AccessDenied";
+import { statusLabels } from "@/lib/reporting";
 import { canViewTicket, canManageTicket, canEvaluateTicket, latestAssignmentOrder } from "@/lib/permissions";
 import {
   ArrowLeft,
@@ -79,22 +80,22 @@ export default async function TicketDetailPage({
       case "REJECTED": return {label:"ไม่รับดำเนินการ",bg:"bg-slate-100 text-slate-700 border-slate-200"};
       case "COMPLETED":
         return {
-          label: "เสร็จสิ้น (Completed)",
+          label: "เสร็จสิ้น",
           bg: "bg-emerald-100 text-emerald-800 border-emerald-200",
         };
       case "IN_PROGRESS":
         return {
-          label: "กำลังดำเนินการ (In Progress)",
+          label: "กำลังดำเนินการ",
           bg: "bg-blue-100 text-blue-800 border-blue-200",
         };
       case "WAITING_PARTS":
         return {
-          label: "รออะไหล่/จัดซื้อ (Waiting Parts)",
+          label: "รออะไหล่/จัดซื้อ",
           bg: "bg-amber-100 text-amber-800 border-amber-200",
         };
       default:
         return {
-          label: "รอรับเรื่อง (Pending)",
+          label: "รอรับเรื่อง",
           bg: "bg-slate-100 text-slate-800 border-slate-200",
         };
     }
@@ -144,6 +145,11 @@ export default async function TicketDetailPage({
           </div>
         </div>
       )}
+
+      <section className="ticket-next-step rounded-2xl border border-indigo-100 bg-indigo-50 p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-sm font-semibold text-indigo-700">สถานะปัจจุบัน</p><h2 className="mt-1 text-xl font-semibold text-slate-900">{statusBadge.label}</h2></div><span className={`rounded-full border px-3 py-1.5 font-semibold ${statusBadge.bg}`}>{statusBadge.label}</span></div>
+        <p className="mt-3 text-slate-600">{ticket.status==="PENDING"?"เจ้าหน้าที่กำลังตรวจสอบและมอบหมายช่าง":ticket.status==="IN_PROGRESS"?"ช่างรับงานแล้วและกำลังดำเนินการ":ticket.status==="WAITING_PARTS"?"งานหยุดรออะไหล่หรือวัสดุที่จำเป็น":ticket.status==="COMPLETED"?"งานซ่อมเสร็จแล้ว กรุณาตรวจสอบผลและประเมินบริการ":"คำร้องนี้ปิดการดำเนินการแล้ว"}</p>
+      </section>
 
       {/* Technician Action Console if logged in as Technician or Admin */}
       {canManageJob && ["IN_PROGRESS", "WAITING_PARTS"].includes(ticket.status) && (
@@ -246,13 +252,13 @@ export default async function TicketDetailPage({
 
         {/* Photos (Before & After Comparison) */}
         <div className="space-y-3 pt-2">
-          <h3 className="text-xs font-bold text-slate-800">รูปภาพหลักฐานเปรียบเทียบ (Before & After)</h3>
+          <h3 className="text-xs font-bold text-slate-800">รูปภาพก่อนและหลังซ่อม</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Before Photo */}
             <div className="border border-slate-200 rounded-xl p-3 bg-slate-50">
               <div className="text-[11px] font-bold text-slate-600 mb-2 flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                ภาพถ่ายตอนแจ้ง (Before)
+                ภาพถ่ายตอนแจ้ง
               </div>
               {beforeImages.length > 0 ? (
                 <div className="grid grid-cols-2 gap-2">
@@ -276,7 +282,7 @@ export default async function TicketDetailPage({
             <div className="border border-slate-200 rounded-xl p-3 bg-slate-50">
               <div className="text-[11px] font-bold text-slate-600 mb-2 flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                ภาพถ่ายหลังซ่อมเสร็จ (After)
+                ภาพถ่ายหลังซ่อมเสร็จ
               </div>
               {afterImages.length > 0 ? (
                 <div className="grid grid-cols-2 gap-2">
@@ -312,7 +318,7 @@ export default async function TicketDetailPage({
         <div className="space-y-4 pt-4 border-t border-slate-100">
           <h3 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
             <Clock className="w-4 h-4 text-indigo-600" />
-            ประวัติการดำเนินงาน (Status Timeline / Audit Trail)
+            ประวัติการดำเนินงาน
           </h3>
           <div className="space-y-3 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
             {ticket.statusLogs.map((log) => (
@@ -320,7 +326,7 @@ export default async function TicketDetailPage({
                 <div className="w-4 h-4 rounded-full bg-indigo-600 ring-4 ring-white shrink-0 mt-0.5" />
                 <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex-1 text-xs">
                   <div className="flex justify-between items-center mb-1">
-                    <span className="font-bold text-slate-800">{log.status}</span>
+                    <span className="font-bold text-slate-800">{statusLabels[log.status]||log.status}</span>
                     <span className="text-[11px] text-slate-400">
                       {new Date(log.createdAt).toLocaleString("th-TH")}
                     </span>
