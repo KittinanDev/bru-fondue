@@ -218,154 +218,34 @@ export default function AdminTicketTable({
       </div>
 
       <div className="flex items-center justify-between gap-3 text-sm"><span>พบ {filteredTickets.length} รายการ</span><div className="flex gap-3"><button disabled={page<=1} onClick={()=>setPage(p=>p-1)} className="rounded border px-3 py-2 disabled:opacity-40">ก่อนหน้า</button><button disabled={page*20>=filteredTickets.length} onClick={()=>setPage(p=>p+1)} className="rounded border px-3 py-2 disabled:opacity-40">ถัดไป</button></div></div>
-      {/* Mobile and narrow-screen ticket cards */}
-      <div className="grid gap-3 xl:hidden">
+      {/* Responsive ticket cards: readable at every width without horizontal scrolling */}
+      <div className="grid gap-4 2xl:grid-cols-2">
         {pagedTickets.map((t) => {
           const statusBadge = getStatusBadge(t.status);
           const currentTech = t.assignments[0]?.technician;
           const isAssigned = Boolean(currentTech);
-          return <article key={t.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
+          return <article key={t.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md">
             <div className="flex items-start justify-between gap-3">
               <Link href={`/tickets/${t.id}`} className="font-mono text-sm font-bold text-indigo-600">{t.ticketCode}</Link>
               <span className={`shrink-0 rounded-full border px-2.5 py-1 text-sm font-semibold ${statusBadge.bg}`}>{statusBadge.label}</span>
             </div>
-            <h3 className="mt-3 text-lg font-semibold leading-snug text-slate-900">{t.title}</h3>
-            <p className="mt-2 text-sm text-slate-600">{t.room || t.locationNote || t.building.name}</p>
-            {t.room && <p className="text-sm text-slate-500">{t.building.name}</p>}
-            <div className="mt-4 flex flex-wrap gap-2 text-sm">
-              <span className="rounded-lg bg-slate-100 px-2.5 py-1">{t.category.name}</span>
-              <span className={`rounded-lg px-2.5 py-1 ${getPriorityBadge(t.priority)}`}>{priorityLabel(t.priority)}</span>
+            <h3 className="mt-4 text-xl font-semibold leading-snug text-slate-900">{t.title}</h3>
+            <p className="mt-1 text-sm text-slate-500">ผู้แจ้ง: {t.reporter.name}</p>
+            <div className="mt-4 grid gap-3 rounded-xl bg-slate-50 p-4 text-sm sm:grid-cols-2">
+              <div><span className="block text-xs font-semibold text-slate-500">สถานที่</span><p className="mt-1 font-medium text-slate-800">{t.room || t.locationNote || t.building.name}</p>{t.room && t.room !== t.building.name && <p className="mt-0.5 text-slate-500">{t.building.name}</p>}</div>
+              <div><span className="block text-xs font-semibold text-slate-500">หมวดหมู่และความเร่งด่วน</span><div className="mt-1.5 flex flex-wrap gap-2"><span className="rounded-lg bg-white px-2.5 py-1 text-slate-700 ring-1 ring-slate-200">{t.category.name}</span><span className={`rounded-lg px-2.5 py-1 ${getPriorityBadge(t.priority)}`}>{priorityLabel(t.priority)}</span></div></div>
             </div>
             <div className="mt-4 border-t border-slate-100 pt-3 text-sm text-slate-600">
               {currentTech ? `ช่างผู้รับผิดชอบ: ${currentTech.name}` : "ยังไม่ได้จ่ายงาน"}
             </div>
-            <div className="mt-4 grid grid-cols-2 gap-2">
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
               {t.status !== "COMPLETED" && t.status !== "REJECTED" && t.status !== "CANCELLED" && <button onClick={()=>handleOpenAssignModal(t)} className="flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-3 py-2.5 font-semibold text-white"><Wrench className="h-4 w-4"/>{isAssigned ? "เปลี่ยนช่าง" : "จ่ายงานช่าง"}</button>}
-              <Link href={`/tickets/${t.id}`} className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 px-3 py-2.5 font-semibold text-slate-700"><ExternalLink className="h-4 w-4"/>ดูรายละเอียด</Link>
+              <Link href={`/tickets/${t.id}`} className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-2.5 font-semibold text-slate-700 hover:bg-slate-50"><ExternalLink className="h-4 w-4"/>ดูรายละเอียด</Link>
             </div>
           </article>;
         })}
       </div>
-      {/* Ticket Table */}
-      <div className="hidden bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden xl:block">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1240px] table-fixed text-left text-xs">
-            <colgroup><col className="w-[150px]"/><col className="w-[280px]"/><col className="w-[250px]"/><col className="w-[170px]"/><col className="w-[130px]"/><col className="w-[150px]"/><col className="w-[230px]"/><col className="w-[170px]"/></colgroup>
-            <thead className="bg-slate-50/80 text-slate-600 uppercase font-bold border-b border-slate-200">
-              <tr>
-                <th className="p-3.5">รหัสคำร้อง</th>
-                <th className="p-3.5">ปัญหา / อาการ</th>
-                <th className="p-3.5">สถานที่</th>
-                <th className="p-3.5">หมวดหมู่</th>
-                <th className="p-3.5">ความเร่งด่วน</th>
-                <th className="p-3.5">สถานะ</th>
-                <th className="p-3.5">ช่างผู้รับผิดชอบ</th>
-                <th className="p-3.5 text-right">การจัดการ</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredTickets.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="p-12 text-center text-slate-400">
-                    ไม่พบรายการคำร้องที่ตรงกับเงื่อนไขการค้นหา
-                  </td>
-                </tr>
-              ) : (
-                pagedTickets.map((t) => {
-                  const statusBadge = getStatusBadge(t.status);
-                  const isAssigned = t.assignments.length > 0;
-                  const currentTech = t.assignments[0]?.technician;
-
-                  return (
-                    <tr key={t.id} className="hover:bg-slate-50/70 transition-colors">
-                      {/* Code */}
-                      <td className="p-3.5 font-mono font-bold text-indigo-600 whitespace-nowrap">
-                        <Link href={`/tickets/${t.id}`} className="hover:underline">
-                          {t.ticketCode}
-                        </Link>
-                      </td>
-
-                      {/* Title */}
-                      <td className="p-3.5 break-normal">
-                        <div className="font-semibold text-slate-800 line-clamp-2">{t.title}</div>
-                        <div className="text-[11px] text-slate-400">
-                          โดย: {t.reporter.name}
-                        </div>
-                      </td>
-
-                      {/* Location */}
-                      <td className="p-3.5 text-slate-700 whitespace-nowrap">
-                        <div className="font-medium">{t.room || t.locationNote || t.building.name}</div>
-                        {t.room && t.room !== t.building.name && (
-                          <div className="text-[10px] text-slate-400">{t.building.name}</div>
-                        )}
-                      </td>
-
-                      {/* Category */}
-                      <td className="p-3.5 text-slate-600 whitespace-nowrap">
-                        <span className="bg-slate-100 px-2 py-0.5 rounded text-[11px]">
-                          {t.category.name}
-                        </span>
-                      </td>
-
-                      {/* Priority */}
-                      <td className="p-3.5 whitespace-nowrap">
-                        <span className={`px-2 py-0.5 rounded text-[10px] ${getPriorityBadge(t.priority)}`}>
-                          {priorityLabel(t.priority)}
-                        </span>
-                      </td>
-
-                      {/* Status */}
-                      <td className="p-3.5 whitespace-nowrap">
-                        <span className={`px-2.5 py-1 rounded-full font-semibold border ${statusBadge.bg}`}>
-                          {statusBadge.label}
-                        </span>
-                      </td>
-
-                      {/* Technician */}
-                      <td className="p-3.5 whitespace-nowrap">
-                        {isAssigned && currentTech ? (
-                          <div className="flex items-center gap-1.5 text-slate-800 font-medium">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                            <span>{currentTech.name}</span>
-                          </div>
-                        ) : (
-                          <span className="text-rose-500 font-medium text-[11px] flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                            ยังไม่ได้จ่ายงาน
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Action Button */}
-                      <td className="p-3.5 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {t.status !== "COMPLETED" && t.status !== "REJECTED" && t.status !== "CANCELLED" && (
-                            <button
-                              onClick={() => handleOpenAssignModal(t)}
-                              className="px-2.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold flex items-center gap-1 shadow-2xs transition-colors"
-                            >
-                              <Wrench className="w-3.5 h-3.5" />
-                              {isAssigned ? "เปลี่ยนช่าง" : "จ่ายงานช่าง"}
-                            </button>
-                          )}
-                          <Link
-                            href={`/tickets/${t.id}`}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-                            title="ดูรายละเอียดคำร้อง"
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {filteredTickets.length === 0 && <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">ไม่พบรายการคำร้องที่ตรงกับเงื่อนไขการค้นหา</div>}
 
       {/* Assign Technician Modal */}
       {selectedTicket && (
